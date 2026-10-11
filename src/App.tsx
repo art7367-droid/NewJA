@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { GameState, Character } from './types';
+import { GameState, Character, Projectile } from './types';
 import { createMercs, createEnemies, initialMap } from './gameData';
 import {
   getMovementRange,
@@ -26,10 +26,13 @@ const initialState: GameState = {
   winner: null,
 };
 
+let projectileIdCounter = 0;
+
 function App() {
   const [gameState, setGameState] = useState<GameState>(initialState);
   const [isEnemyTurn, setIsEnemyTurn] = useState(false);
   const [showHelp, setShowHelp] = useState(true);
+  const [projectiles, setProjectiles] = useState<Projectile[]>([]);
 
   const selectCharacter = useCallback((char: Character) => {
     if (gameState.turn !== 'player' || gameState.gameOver) return;
@@ -69,6 +72,28 @@ function App() {
       const target = characters.find(c => c.isAlive && c.position.x === x && c.position.y === y);
       if (target) {
         const result = resolveCombat(selectedCharacter, target, map);
+
+        // Create projectile animation
+        const newProjectile: Projectile = {
+          id: `proj-${projectileIdCounter++}`,
+          from: { ...selectedCharacter.position },
+          to: { ...target.position },
+          startTime: Date.now(),
+          duration: 800, // 800ms total animation
+          hit: result.hit,
+          critical: result.critical,
+          damage: result.damage,
+          killed: result.killed,
+          attackerName: selectedCharacter.name,
+          targetName: target.name,
+        };
+
+        setProjectiles(prev => [...prev, newProjectile]);
+
+        // Remove projectile after animation
+        setTimeout(() => {
+          setProjectiles(prev => prev.filter(p => p.id !== newProjectile.id));
+        }, 1000);
 
         setGameState(prev => {
           const newChars = prev.characters.map(c => {
@@ -167,8 +192,30 @@ function App() {
         const result = executeEnemyTurn(prev);
         const newLog = [...prev.combatLog];
         
-        for (const move of result.moves) {
-          newLog.push(`${move.character.portrait} ${move.character.name}: ${move.action}`);
+        for (const action of result.actions) {
+          newLog.push(`${action.character.portrait} ${action.character.name}: ${action.action}`);
+          
+          // Create projectile animation for enemy attacks
+          if (action.type === 'attack' && action.target && action.result) {
+            const enemyProjectile: Projectile = {
+              id: `proj-${projectileIdCounter++}`,
+              from: { ...action.character.position },
+              to: { ...action.target.position },
+              startTime: Date.now(),
+              duration: 800,
+              hit: action.result.hit,
+              critical: action.result.critical,
+              damage: action.result.damage,
+              killed: action.result.killed,
+              attackerName: action.character.name,
+              targetName: action.target.name,
+            };
+            
+            setProjectiles(p => [...p, enemyProjectile]);
+            setTimeout(() => {
+              setProjectiles(p => p.filter(pr => pr.id !== enemyProjectile.id));
+            }, 1000);
+          }
         }
 
         const gameOverCheck = checkGameOver(prev.characters);
@@ -352,6 +399,7 @@ function App() {
               validAttacks={gameState.actionMode === 'attack' || gameState.actionMode === 'none' ? gameState.validAttacks : []}
               actionMode={gameState.actionMode}
               onTileClick={handleTileClick}
+              projectiles={projectiles}
             />
           </div>
 

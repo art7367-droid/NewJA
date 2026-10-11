@@ -152,8 +152,16 @@ export const resolveCombat = (
   };
 };
 
-export const executeEnemyTurn = (state: GameState): { moves: Array<{ character: Character; action: string }> } => {
-  const moves: Array<{ character: Character; action: string }> = [];
+export interface EnemyAction {
+  type: 'attack' | 'move';
+  character: Character;
+  action: string;
+  target?: Character;
+  result?: import('./types').CombatResult;
+}
+
+export const executeEnemyTurn = (state: GameState): { actions: EnemyAction[] } => {
+  const actions: EnemyAction[] = [];
   const enemies = state.characters.filter(c => c.isEnemy && c.isAlive);
   const playerChars = state.characters.filter(c => !c.isEnemy && c.isAlive);
 
@@ -177,7 +185,7 @@ export const executeEnemyTurn = (state: GameState): { moves: Array<{ character: 
     // Try to attack if in range
     if (closestDist <= enemy.weapon.range) {
       const result = resolveCombat(enemy, closestPlayer, state.map);
-      moves.push({ character: enemy, action: result.message });
+      actions.push({ type: 'attack', character: enemy, action: result.message, target: closestPlayer, result });
       
       closestPlayer.hp = Math.max(0, closestPlayer.hp - result.damage);
       if (result.killed) {
@@ -238,12 +246,12 @@ export const executeEnemyTurn = (state: GameState): { moves: Array<{ character: 
       }
       
       if (moved > 0) {
-        moves.push({ character: enemy, action: `двигается` });
+        actions.push({ type: 'move', character: enemy, action: `двигается` });
       }
     }
   }
 
-  return { moves };
+  return { actions };
 };
 
 export const checkGameOver = (characters: Character[]): { over: boolean; winner: string | null } => {

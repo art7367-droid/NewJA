@@ -1,5 +1,5 @@
-import React, { useMemo } from 'react';
-import { Tile, Character, Position } from '../types';
+import React, { useMemo, useState, useEffect } from 'react';
+import { Tile, Character, Position, Projectile } from '../types';
 
 interface GameMapProps {
   map: Tile[][];
@@ -9,13 +9,14 @@ interface GameMapProps {
   validAttacks: Position[];
   actionMode: 'move' | 'attack' | 'none';
   onTileClick: (x: number, y: number) => void;
+  projectiles: Projectile[];
 }
 
 // Isometric tile dimensions
-const TILE_W = 64; // width of diamond
-const TILE_H = 32; // height of diamond
-const WALL_HEIGHT = 28; // visual height of walls/buildings
-const MAP_COLS = 20;
+const TILE_W = 64;
+const TILE_H = 32;
+const WALL_HEIGHT = 28;
+const MAP_COLS = 15;
 const MAP_ROWS = 15;
 
 // Convert grid coords to isometric screen coords (top-center of tile)
@@ -32,20 +33,13 @@ const diamondPath = (cx: number, cy: number): string => {
   return `M ${cx} ${cy - hh} L ${cx + hw} ${cy} L ${cx} ${cy + hh} L ${cx - hw} ${cy} Z`;
 };
 
-// Create wall/building 3D shape (top face + left face + right face)
+// Create wall/building 3D shape
 const wallPaths = (cx: number, cy: number, height: number) => {
   const hw = TILE_W / 2;
   const hh = TILE_H / 2;
-  
-  // Top face (same as diamond but raised)
   const top = `M ${cx} ${cy - hh - height} L ${cx + hw} ${cy - height} L ${cx} ${cy + hh - height} L ${cx - hw} ${cy - height} Z`;
-  
-  // Left face
   const left = `M ${cx - hw} ${cy - height} L ${cx} ${cy + hh - height} L ${cx} ${cy + hh} L ${cx - hw} ${cy} Z`;
-  
-  // Right face
   const right = `M ${cx + hw} ${cy - height} L ${cx} ${cy + hh - height} L ${cx} ${cy + hh} L ${cx + hw} ${cy} Z`;
-  
   return { top, left, right };
 };
 
@@ -62,6 +56,235 @@ const getTileColors = (tile: Tile): { top: string; left: string; right: string }
   }
 };
 
+// Animated projectile component
+const ProjectileAnim: React.FC<{ projectile: Projectile; offsetX: number; offsetY: number }> = ({ projectile, offsetX, offsetY }) => {
+  const [progress, setProgress] = useState(0);
+  const [showImpact, setShowImpact] = useState(false);
+
+  useEffect(() => {
+    const startTime = Date.now();
+    const flightDuration = projectile.duration * 0.6;
+    const impactDuration = projectile.duration * 0.4;
+
+    const animate = () => {
+      const elapsed = Date.now() - startTime;
+      if (elapsed < flightDuration) {
+        setProgress(elapsed / flightDuration);
+        requestAnimationFrame(animate);
+      } else if (elapsed < projectile.duration) {
+        setProgress(1);
+        setShowImpact(true);
+        requestAnimationFrame(animate);
+      }
+    };
+
+    requestAnimationFrame(animate);
+  }, [projectile.duration]);
+
+  const fromIso = toIso(projectile.from.x, projectile.from.y);
+  const toIsoPos = toIso(projectile.to.x, projectile.to.y);
+
+  const fromX = fromIso.sx + offsetX;
+  const fromY = fromIso.sy + offsetY - 20; // Start from character height
+  const toX = toIsoPos.sx + offsetX;
+  const toY = toIsoPos.sy + offsetY - 20;
+
+  // Current position with arc
+  const currentX = fromX + (toX - fromX) * progress;
+  const arcHeight = -40; // Arc up
+  const currentY = fromY + (toY - fromY) * progress + arcHeight * Math.sin(progress * Math.PI);
+
+  if (progress >= 1 && !showImpact) return null;
+
+  return (
+    <g>
+      {/* Trail */}
+      {!showImpact && (
+        <>
+          <line
+            x1={fromX}
+            y1={fromY}
+            x2={currentX}
+            y2={currentY}
+            stroke="#fbbf24"
+            strokeWidth="1.5"
+            opacity="0.6"
+            strokeDasharray="4,2"
+          />
+          {/* Bullet/projectile */}
+          <circle
+            cx={currentX}
+            cy={currentY}
+            r="3"
+            fill="#fbbf24"
+            className="animate-pulse"
+          >
+            <animate
+              attributeName="r"
+              values="3;4;3"
+              dur="0.2s"
+              repeatCount="indefinite"
+            />
+          </circle>
+          {/* Muzzle flash at origin */}
+          {progress < 0.3 && (
+            <circle
+              cx={fromX}
+              cy={fromY}
+              r={8 * (1 - progress / 0.3)}
+              fill="#fbbf24"
+              opacity={0.8 * (1 - progress / 0.3)}
+            />
+          )}
+        </>
+      )}
+
+      {/* Impact effect */}
+      {showImpact && (
+        <g>
+          {projectile.hit ? (
+            <>
+              {/* Hit flash */}
+              <circle
+                cx={toX}
+                cy={toY}
+                r="12"
+                fill={projectile.critical ? '#ef4444' : '#fbbf24'}
+                opacity="0.8"
+              >
+                <animate
+                  attributeName="r"
+                  values="4;16;8"
+                  dur="0.4s"
+                  fill="freeze"
+                />
+                <animate
+                  attributeName="opacity"
+                  values="0.9;0.6;0"
+                  dur="0.4s"
+                  fill="freeze"
+                />
+              </circle>
+              {/* Sparks */}
+              {projectile.critical && (
+                <>
+                  {[0, 60, 120, 180, 240, 300].map((angle, i) => {
+                    const rad = (angle * Math.PI) / 180;
+                    const sparkDist = 20;
+                    return (
+                      <line
+                        key={i}
+                        x1={toX}
+                        y1={toY}
+                        x2={toX + Math.cos(rad) * sparkDist}
+                        y2={toY + Math.sin(rad) * sparkDist}
+                        stroke="#ef4444"
+                        strokeWidth="2"
+                        opacity="0.8"
+                      >
+                        <animate
+                          attributeName="opacity"
+                          values="0.9;0"
+                          dur="0.3s"
+                          fill="freeze"
+                        />
+                      </line>
+                    );
+                  })}
+                </>
+              )}
+              {/* Hit marker */}
+              <text
+                x={toX}
+                y={toY - 20}
+                textAnchor="middle"
+                fontSize="14"
+                fontWeight="bold"
+                fill={projectile.critical ? '#ef4444' : '#fbbf24'}
+              >
+                {projectile.critical ? '💥 КРИТ!' : `-${projectile.damage}`}
+                <animate
+                  attributeName="y"
+                  values={`${toY - 20};${toY - 40}`}
+                  dur="0.6s"
+                  fill="freeze"
+                />
+                <animate
+                  attributeName="opacity"
+                  values="1;0"
+                  dur="0.8s"
+                  fill="freeze"
+                />
+              </text>
+              {/* Kill indicator */}
+              {projectile.killed && (
+                <text
+                  x={toX}
+                  y={toY - 45}
+                  textAnchor="middle"
+                  fontSize="16"
+                  fill="#ef4444"
+                  fontWeight="bold"
+                >
+                  ☠️ УБИТ!
+                  <animate
+                    attributeName="opacity"
+                    values="1;0"
+                    dur="1s"
+                    fill="freeze"
+                  />
+                </text>
+              )}
+            </>
+          ) : (
+            <>
+              {/* Miss effect */}
+              <circle
+                cx={toX}
+                cy={toY}
+                r="6"
+                fill="none"
+                stroke="#9ca3af"
+                strokeWidth="2"
+                opacity="0.6"
+              >
+                <animate
+                  attributeName="r"
+                  values="2;10"
+                  dur="0.3s"
+                  fill="freeze"
+                />
+                <animate
+                  attributeName="opacity"
+                  values="0.8;0"
+                  dur="0.3s"
+                  fill="freeze"
+                />
+              </circle>
+              <text
+                x={toX}
+                y={toY - 15}
+                textAnchor="middle"
+                fontSize="10"
+                fill="#9ca3af"
+                fontStyle="italic"
+              >
+                промах
+                <animate
+                  attributeName="opacity"
+                  values="1;0"
+                  dur="0.6s"
+                  fill="freeze"
+                />
+              </text>
+            </>
+          )}
+        </g>
+      )}
+    </g>
+  );
+};
+
 const GameMap: React.FC<GameMapProps> = ({
   map,
   characters,
@@ -70,32 +293,24 @@ const GameMap: React.FC<GameMapProps> = ({
   validAttacks,
   actionMode,
   onTileClick,
+  projectiles,
 }) => {
-  // Calculate SVG dimensions - proper isometric bounds
   const { svgWidth, svgHeight, offsetX, offsetY } = useMemo(() => {
-    // In isometric, corners map to:
-    // (0,0) -> top
-    // (COLS-1, 0) -> right
-    // (0, ROWS-1) -> left
-    // (COLS-1, ROWS-1) -> bottom
-    
     const topLeft = toIso(0, 0);
     const topRight = toIso(MAP_COLS - 1, 0);
     const bottomLeft = toIso(0, MAP_ROWS - 1);
     const bottomRight = toIso(MAP_COLS - 1, MAP_ROWS - 1);
-    
+
     const minX = Math.min(topLeft.sx, topRight.sx, bottomLeft.sx, bottomRight.sx) - TILE_W / 2;
     const maxX = Math.max(topLeft.sx, topRight.sx, bottomLeft.sx, bottomRight.sx) + TILE_W / 2;
-    const minY = Math.min(topLeft.sy, topRight.sy, bottomLeft.sy, bottomRight.sy) - TILE_H / 2 - WALL_HEIGHT;
+    const minY = Math.min(topLeft.sy, topRight.sy, bottomLeft.sy, bottomRight.sy) - TILE_H / 2 - WALL_HEIGHT - 50;
     const maxY = Math.max(topLeft.sy, topRight.sy, bottomLeft.sy, bottomRight.sy) + TILE_H / 2;
-    
-    const width = maxX - minX + 40; // padding
-    const height = maxY - minY + 40; // padding
-    
-    // Offset to shift everything into positive coordinates
+
+    const width = maxX - minX + 40;
+    const height = maxY - minY + 40;
     const offX = -minX + 20;
     const offY = -minY + 20;
-    
+
     return { svgWidth: width, svgHeight: height, offsetX: offX, offsetY: offY };
   }, []);
 
@@ -115,7 +330,6 @@ const GameMap: React.FC<GameMapProps> = ({
     return selectedCharacter?.position.x === x && selectedCharacter?.position.y === y;
   };
 
-  // Sort render order: back to front (y+x ascending)
   const renderOrder = useMemo(() => {
     const items: { x: number; y: number; order: number }[] = [];
     for (let y = 0; y < MAP_ROWS; y++) {
@@ -132,7 +346,8 @@ const GameMap: React.FC<GameMapProps> = ({
   };
 
   return (
-    <div className="relative rounded-lg border-2 border-gray-700 bg-gray-950 shadow-2xl"
+    <div
+      className="relative rounded-lg border-2 border-gray-700 bg-gray-950 shadow-2xl"
       style={{ width: svgWidth, height: svgHeight, minWidth: svgWidth, minHeight: svgHeight }}
     >
       <svg
@@ -141,10 +356,8 @@ const GameMap: React.FC<GameMapProps> = ({
         viewBox={`0 0 ${svgWidth} ${svgHeight}`}
         className="cursor-pointer block"
       >
-        {/* Background */}
         <rect x={0} y={0} width={svgWidth} height={svgHeight} fill="#1a1a2e" />
 
-        {/* Render tiles and characters in order */}
         {renderOrder.map(({ x, y }) => {
           const tile = map[y][x];
           const { sx, sy } = toIso(x, y);
@@ -159,19 +372,14 @@ const GameMap: React.FC<GameMapProps> = ({
 
           return (
             <g key={`tile-${x}-${y}`} onClick={() => handleClick(x, y)} className="cursor-pointer">
-              {/* Base tile (ground) */}
               {isWall ? (
                 <>
-                  {/* Wall/Building 3D shape */}
                   {(() => {
                     const paths = wallPaths(cx, cy, WALL_HEIGHT);
                     return (
                       <>
-                        {/* Left face */}
                         <path d={paths.left} fill={colors.left} stroke="#000" strokeWidth="0.5" />
-                        {/* Right face */}
                         <path d={paths.right} fill={colors.right} stroke="#000" strokeWidth="0.5" />
-                        {/* Top face */}
                         <path d={paths.top} fill={colors.top} stroke="#000" strokeWidth="0.5" />
                       </>
                     );
@@ -179,19 +387,15 @@ const GameMap: React.FC<GameMapProps> = ({
                 </>
               ) : (
                 <>
-                  {/* Flat tile */}
                   <path
                     d={diamondPath(cx, cy)}
                     fill={colors.top}
                     stroke="#00000030"
                     strokeWidth="0.5"
                   />
-                  {/* Tile texture details */}
                   {tile.type === 'tree' && (
                     <>
-                      {/* Tree trunk */}
                       <rect x={cx - 2} y={cy - 16} width={4} height={12} fill="#5c3d1e" rx="1" />
-                      {/* Tree canopy */}
                       <ellipse cx={cx} cy={cy - 20} rx={10} ry={12} fill="#2d7a22" />
                       <ellipse cx={cx - 4} cy={cy - 18} rx={7} ry={9} fill="#3d8f34" />
                       <ellipse cx={cx + 4} cy={cy - 22} rx={6} ry={8} fill="#4aa340" />
@@ -205,28 +409,17 @@ const GameMap: React.FC<GameMapProps> = ({
                     </>
                   )}
                   {tile.type === 'road' && (
-                    <>
-                      <line x1={cx - 8} y1={cy} x2={cx + 8} y2={cy} stroke="#ffffff15" strokeWidth="1" strokeDasharray="3,3" />
-                    </>
+                    <line x1={cx - 8} y1={cy} x2={cx + 8} y2={cy} stroke="#ffffff15" strokeWidth="1" strokeDasharray="3,3" />
                   )}
                 </>
               )}
 
-              {/* Cover indicator */}
               {tile.coverBonus > 0 && !isWall && !character && (
-                <text
-                  x={cx}
-                  y={cy + 4}
-                  textAnchor="middle"
-                  fontSize="8"
-                  fill="#fbbf24"
-                  opacity="0.7"
-                >
+                <text x={cx} y={cy + 4} textAnchor="middle" fontSize="8" fill="#fbbf24" opacity="0.7">
                   {tile.coverBonus}
                 </text>
               )}
 
-              {/* Move highlight */}
               {isMove && !character && !isWall && (
                 <path
                   d={diamondPath(cx, cy)}
@@ -238,7 +431,6 @@ const GameMap: React.FC<GameMapProps> = ({
                 />
               )}
 
-              {/* Attack highlight */}
               {isAttack && !isWall && (
                 <path
                   d={diamondPath(cx, cy)}
@@ -250,29 +442,13 @@ const GameMap: React.FC<GameMapProps> = ({
                 />
               )}
 
-              {/* Selected highlight */}
               {selected && (
-                <path
-                  d={diamondPath(cx, cy)}
-                  fill="none"
-                  stroke="#fbbf24"
-                  strokeWidth="2.5"
-                />
+                <path d={diamondPath(cx, cy)} fill="none" stroke="#fbbf24" strokeWidth="2.5" />
               )}
 
-              {/* Character */}
               {character && (
                 <g>
-                  {/* Shadow */}
-                  <ellipse
-                    cx={cx}
-                    cy={cy + 2}
-                    rx={8}
-                    ry={4}
-                    fill="black"
-                    opacity="0.4"
-                  />
-                  {/* Body */}
+                  <ellipse cx={cx} cy={cy + 2} rx={8} ry={4} fill="black" opacity="0.4" />
                   <ellipse
                     cx={cx}
                     cy={cy - 14}
@@ -282,7 +458,6 @@ const GameMap: React.FC<GameMapProps> = ({
                     stroke={selected ? '#fbbf24' : '#00000060'}
                     strokeWidth={selected ? 2 : 1}
                   />
-                  {/* Head */}
                   <circle
                     cx={cx}
                     cy={cy - 28}
@@ -291,27 +466,10 @@ const GameMap: React.FC<GameMapProps> = ({
                     stroke={selected ? '#fbbf24' : '#00000060'}
                     strokeWidth={selected ? 2 : 1}
                   />
-                  {/* Face emoji */}
-                  <text
-                    x={cx}
-                    y={cy - 24}
-                    textAnchor="middle"
-                    fontSize="10"
-                    dominantBaseline="middle"
-                  >
+                  <text x={cx} y={cy - 24} textAnchor="middle" fontSize="10" dominantBaseline="middle">
                     {character.portrait}
                   </text>
-                  {/* HP bar background */}
-                  <rect
-                    x={cx - 12}
-                    y={cy - 40}
-                    width={24}
-                    height={4}
-                    rx={2}
-                    fill="#000"
-                    opacity="0.7"
-                  />
-                  {/* HP bar fill */}
+                  <rect x={cx - 12} y={cy - 40} width={24} height={4} rx={2} fill="#000" opacity="0.7" />
                   <rect
                     x={cx - 12}
                     y={cy - 40}
@@ -326,7 +484,6 @@ const GameMap: React.FC<GameMapProps> = ({
                         : '#ef4444'
                     }
                   />
-                  {/* Name tag */}
                   <text
                     x={cx}
                     y={cy - 44}
@@ -337,14 +494,8 @@ const GameMap: React.FC<GameMapProps> = ({
                   >
                     {character.name}
                   </text>
-                  {/* Enemy indicator */}
                   {character.isEnemy && (
-                    <text
-                      x={cx + 10}
-                      y={cy - 30}
-                      fontSize="8"
-                      fill="#ef4444"
-                    >
+                    <text x={cx + 10} y={cy - 30} fontSize="8" fill="#ef4444">
                       ⚠
                     </text>
                   )}
@@ -354,22 +505,10 @@ const GameMap: React.FC<GameMapProps> = ({
           );
         })}
 
-        {/* Grid coordinate hints at edges */}
-        {Array.from({ length: MAP_COLS }, (_, x) => {
-          const { sx, sy } = toIso(x, -1);
-          return (
-            <text
-              key={`col-${x}`}
-              x={sx + offsetX}
-              y={sy + offsetY + 10}
-              textAnchor="middle"
-              fontSize="7"
-              fill="#ffffff30"
-            >
-              {x}
-            </text>
-          );
-        })}
+        {/* Projectiles */}
+        {projectiles.map(proj => (
+          <ProjectileAnim key={proj.id} projectile={proj} offsetX={offsetX} offsetY={offsetY} />
+        ))}
       </svg>
     </div>
   );

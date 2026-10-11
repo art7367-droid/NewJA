@@ -65,3 +65,17 @@ export interface CombatResult {
   killed: boolean;
   message: string;
 }
+
+export interface Projectile {
+  id: string;
+  from: Position;
+  to: Position;
+  startTime: number;
+  duration: number;
+  hit: boolean;
+  critical: boolean;
+  damage: number;
+  killed: boolean;
+  attackerName: string;
+  targetName: string;
+}

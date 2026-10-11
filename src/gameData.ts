@@ -1,6 +1,6 @@
 import { Character, Tile, TileType, Weapon } from './types';
 
-export const MAP_WIDTH = 20;
+export const MAP_WIDTH = 15;
 export const MAP_HEIGHT = 15;
 export const TILE_SIZE = 40;
 
@@ -17,7 +17,7 @@ export const createMercs = (): Character[] => [
   {
     id: 'merc1',
     name: 'Гризли',
-    position: { x: 2, y: 7 },
+    position: { x: 1, y: 7 },
     hp: 120,
     maxHp: 120,
     ap: 25,
@@ -47,7 +47,7 @@ export const createMercs = (): Character[] => [
   {
     id: 'merc3',
     name: 'Хок',
-    position: { x: 3, y: 9 },
+    position: { x: 2, y: 9 },
     hp: 100,
     maxHp: 100,
     ap: 22,
@@ -62,7 +62,7 @@ export const createMercs = (): Character[] => [
   {
     id: 'merc4',
     name: 'Бульдог',
-    position: { x: 2, y: 10 },
+    position: { x: 1, y: 10 },
     hp: 150,
     maxHp: 150,
     ap: 20,
@@ -80,7 +80,7 @@ export const createEnemies = (): Character[] => [
   {
     id: 'enemy1',
     name: 'Солдат',
-    position: { x: 14, y: 3 },
+    position: { x: 11, y: 3 },
     hp: 60,
     maxHp: 60,
     ap: 20,
@@ -95,7 +95,7 @@ export const createEnemies = (): Character[] => [
   {
     id: 'enemy2',
     name: 'Солдат',
-    position: { x: 16, y: 5 },
+    position: { x: 13, y: 5 },
     hp: 60,
     maxHp: 60,
     ap: 20,
@@ -110,7 +110,7 @@ export const createEnemies = (): Character[] => [
   {
     id: 'enemy3',
     name: 'Снайпер',
-    position: { x: 18, y: 2 },
+    position: { x: 13, y: 1 },
     hp: 45,
     maxHp: 45,
     ap: 18,
@@ -125,7 +125,7 @@ export const createEnemies = (): Character[] => [
   {
     id: 'enemy4',
     name: 'Тяжёлый',
-    position: { x: 15, y: 7 },
+    position: { x: 12, y: 8 },
     hp: 100,
     maxHp: 100,
     ap: 15,
@@ -140,7 +140,7 @@ export const createEnemies = (): Character[] => [
   {
     id: 'enemy5',
     name: 'Солдат',
-    position: { x: 17, y: 9 },
+    position: { x: 13, y: 11 },
     hp: 60,
     maxHp: 60,
     ap: 20,
@@ -164,37 +164,37 @@ const generateMap = (): Tile[][] => {
       let walkable = true;
       let coverBonus = 0;
 
-      // Дорога по горизонтали
-      if (y === 6 || y === 7) {
+      // Горизонтальная дорога через центр
+      if (y === 7) {
         type = 'road';
-        coverBonus = 0;
       }
-      // Дорога по вертикали
-      if (x === 10) {
+      // Вертикальная дорога
+      else if (x === 7) {
         type = 'road';
-        coverBonus = 0;
       }
-      // Здания
+      // Большое здание в центре-сверху
       else if (x >= 5 && x <= 7 && y >= 2 && y <= 4) {
         type = 'building';
         walkable = false;
       }
-      else if (x >= 12 && x <= 14 && y >= 10 && y <= 12) {
-        type = 'building';
-        walkable = false;
-      }
-      // Стены зданий
+      // Стены здания
       else if (
-        (x === 4 || x === 8) && y >= 2 && y <= 4 ||
-        x >= 5 && x <= 7 && (y === 1 || y === 5)
+        ((x === 4 || x === 8) && y >= 2 && y <= 4) ||
+        (x >= 5 && x <= 7 && (y === 1 || y === 5))
       ) {
         type = 'wall';
         walkable = false;
         coverBonus = 30;
       }
+      // Малое здание справа
+      else if (x >= 10 && x <= 11 && y >= 10 && y <= 11) {
+        type = 'building';
+        walkable = false;
+      }
+      // Стены малого здания
       else if (
-        (x === 11 || x === 15) && y >= 10 && y <= 12 ||
-        x >= 12 && x <= 14 && (y === 9 || y === 13)
+        ((x === 9 || x === 12) && y >= 10 && y <= 11) ||
+        (x >= 10 && x <= 11 && (y === 9 || y === 12))
       ) {
         type = 'wall';
         walkable = false;
@@ -202,24 +202,23 @@ const generateMap = (): Tile[][] => {
       }
       // Деревья
       else if (
-        (x === 3 && y === 3) || (x === 9 && y === 1) || (x === 11 && y === 4) ||
-        (x === 8 && y === 11) || (x === 6 && y === 12) || (x === 16 && y === 12) ||
-        (x === 1 && y === 3) || (x === 4 && y === 11) || (x === 18 && y === 6) ||
-        (x === 13 && y === 1) || (x === 0 && y === 12)
+        (x === 3 && y === 3) || (x === 10 && y === 2) || (x === 12 && y === 4) ||
+        (x === 3 && y === 11) || (x === 5 && y === 13) || (x === 13 && y === 13) ||
+        (x === 1 && y === 4) || (x === 14 && y === 7) || (x === 9 && y === 13)
       ) {
         type = 'tree';
         walkable = false;
         coverBonus = 20;
       }
-      // Вода
-      else if (x >= 17 && x <= 19 && y >= 11 && y <= 13) {
+      // Водоем в правом нижнем углу
+      else if (x >= 13 && x <= 14 && y >= 12 && y <= 13) {
         type = 'water';
         walkable = false;
       }
-      // Грязь
+      // Грязевые участки
       else if (
-        (x === 9 && y >= 8 && y <= 10) ||
-        (x === 11 && y >= 2 && y <= 4)
+        (x === 9 && y >= 8 && y <= 9) ||
+        (x === 4 && y === 9)
       ) {
         type = 'dirt';
         coverBonus = 5;
