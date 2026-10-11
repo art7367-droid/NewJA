@@ -272,9 +272,9 @@ function App() {
       </header>
 
       {/* Main content */}
-      <div className="flex-1 flex gap-3 p-3 overflow-hidden">
+      <div className="flex-1 flex gap-3 p-3 min-h-0">
         {/* Left panel - Characters */}
-        <div className="w-64 flex-shrink-0 flex flex-col gap-3">
+        <div className="w-64 flex-shrink-0 flex flex-col gap-3 overflow-y-auto">
           <CharacterPanel
             character={gameState.selectedCharacter}
             allCharacters={gameState.characters}
@@ -342,16 +342,18 @@ function App() {
         </div>
 
         {/* Center - Map */}
-        <div className="flex-1 flex flex-col items-center justify-center gap-2 overflow-auto">
-          <GameMap
-            map={gameState.map}
-            characters={gameState.characters}
-            selectedCharacter={gameState.selectedCharacter}
-            validMoves={gameState.actionMode === 'move' || gameState.actionMode === 'none' ? gameState.validMoves : []}
-            validAttacks={gameState.actionMode === 'attack' || gameState.actionMode === 'none' ? gameState.validAttacks : []}
-            actionMode={gameState.actionMode}
-            onTileClick={handleTileClick}
-          />
+        <div className="flex-1 flex flex-col items-center justify-start gap-2 min-w-0 p-2">
+          <div className="overflow-auto border border-gray-600 rounded-lg bg-gray-900" style={{ maxHeight: 'calc(100vh - 140px)' }}>
+            <GameMap
+              map={gameState.map}
+              characters={gameState.characters}
+              selectedCharacter={gameState.selectedCharacter}
+              validMoves={gameState.actionMode === 'move' || gameState.actionMode === 'none' ? gameState.validMoves : []}
+              validAttacks={gameState.actionMode === 'attack' || gameState.actionMode === 'none' ? gameState.validAttacks : []}
+              actionMode={gameState.actionMode}
+              onTileClick={handleTileClick}
+            />
+          </div>
 
           {/* Legend */}
           <div className="flex gap-4 text-xs text-gray-400 flex-wrap justify-center">
@@ -363,7 +365,7 @@ function App() {
         </div>
 
         {/* Right panel - Log */}
-        <div className="w-72 flex-shrink-0 flex flex-col gap-3">
+        <div className="w-72 flex-shrink-0 flex flex-col gap-3 overflow-y-auto">
           <CombatLog log={gameState.combatLog} />
           
           {/* Enemy info */}

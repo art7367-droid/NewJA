@@ -44,6 +44,6 @@ button:focus {
 }
 
 body {
-  overflow: hidden;
+  overflow: auto;
   background: #111827;
 }

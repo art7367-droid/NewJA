@@ -71,35 +71,33 @@ const GameMap: React.FC<GameMapProps> = ({
   actionMode,
   onTileClick,
 }) => {
-  // Calculate SVG dimensions
-  const svgWidth = useMemo(() => {
-    // Max extent: from top-left to bottom-right in iso
-    const corners = [
-      toIso(0, 0),
-      toIso(MAP_COLS - 1, 0),
-      toIso(0, MAP_ROWS - 1),
-      toIso(MAP_COLS - 1, MAP_ROWS - 1),
-    ];
-    const minX = Math.min(...corners.map(c => c.sx)) - TILE_W;
-    const maxX = Math.max(...corners.map(c => c.sx)) + TILE_W;
-    return maxX - minX;
+  // Calculate SVG dimensions - proper isometric bounds
+  const { svgWidth, svgHeight, offsetX, offsetY } = useMemo(() => {
+    // In isometric, corners map to:
+    // (0,0) -> top
+    // (COLS-1, 0) -> right
+    // (0, ROWS-1) -> left
+    // (COLS-1, ROWS-1) -> bottom
+    
+    const topLeft = toIso(0, 0);
+    const topRight = toIso(MAP_COLS - 1, 0);
+    const bottomLeft = toIso(0, MAP_ROWS - 1);
+    const bottomRight = toIso(MAP_COLS - 1, MAP_ROWS - 1);
+    
+    const minX = Math.min(topLeft.sx, topRight.sx, bottomLeft.sx, bottomRight.sx) - TILE_W / 2;
+    const maxX = Math.max(topLeft.sx, topRight.sx, bottomLeft.sx, bottomRight.sx) + TILE_W / 2;
+    const minY = Math.min(topLeft.sy, topRight.sy, bottomLeft.sy, bottomRight.sy) - TILE_H / 2 - WALL_HEIGHT;
+    const maxY = Math.max(topLeft.sy, topRight.sy, bottomLeft.sy, bottomRight.sy) + TILE_H / 2;
+    
+    const width = maxX - minX + 40; // padding
+    const height = maxY - minY + 40; // padding
+    
+    // Offset to shift everything into positive coordinates
+    const offX = -minX + 20;
+    const offY = -minY + 20;
+    
+    return { svgWidth: width, svgHeight: height, offsetX: offX, offsetY: offY };
   }, []);
-
-  const svgHeight = useMemo(() => {
-    const corners = [
-      toIso(0, 0),
-      toIso(MAP_COLS - 1, 0),
-      toIso(0, MAP_ROWS - 1),
-      toIso(MAP_COLS - 1, MAP_ROWS - 1),
-    ];
-    const minY = Math.min(...corners.map(c => c.sy)) - TILE_H - WALL_HEIGHT;
-    const maxY = Math.max(...corners.map(c => c.sy)) + TILE_H;
-    return maxY - minY;
-  }, []);
-
-  // Offset to ensure everything is visible
-  const offsetX = TILE_W + 20;
-  const offsetY = WALL_HEIGHT + TILE_H + 20;
 
   const getCharacterAt = (x: number, y: number): Character | undefined => {
     return characters.find(c => c.isAlive && c.position.x === x && c.position.y === y);
@@ -134,17 +132,17 @@ const GameMap: React.FC<GameMapProps> = ({
   };
 
   return (
-    <div className="relative overflow-hidden rounded-lg border-2 border-gray-700 bg-gray-950 shadow-2xl"
-      style={{ width: svgWidth + 40, height: svgHeight + 40 }}
+    <div className="relative rounded-lg border-2 border-gray-700 bg-gray-950 shadow-2xl"
+      style={{ width: svgWidth, height: svgHeight, minWidth: svgWidth, minHeight: svgHeight }}
     >
       <svg
-        width={svgWidth + 40}
-        height={svgHeight + 40}
-        viewBox={`${-offsetX} ${-offsetY} ${svgWidth + 40} ${svgHeight + 40}`}
-        className="cursor-pointer"
+        width={svgWidth}
+        height={svgHeight}
+        viewBox={`0 0 ${svgWidth} ${svgHeight}`}
+        className="cursor-pointer block"
       >
         {/* Background */}
-        <rect x={-offsetX} y={-offsetY} width={svgWidth + 40} height={svgHeight + 40} fill="#1a1a2e" />
+        <rect x={0} y={0} width={svgWidth} height={svgHeight} fill="#1a1a2e" />
 
         {/* Render tiles and characters in order */}
         {renderOrder.map(({ x, y }) => {
