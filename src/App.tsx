@@ -351,75 +351,76 @@ function App() {
         </div>
 
         {/* Bottom panels */}
-        <div className="flex gap-3 h-64 flex-shrink-0">
-          {/* Left - Characters and Actions */}
-          <div className="flex gap-3 flex-1">
-            <div className="w-64 flex-shrink-0 overflow-y-auto">
-              <CharacterPanel
-                character={gameState.selectedCharacter}
-                allCharacters={gameState.characters}
-                onSelectCharacter={selectCharacter}
-              />
-            </div>
+        <div className="flex gap-2 h-56 flex-shrink-0">
+          {/* Left - Characters (wider) */}
+          <div className="w-80 flex-shrink-0">
+            <CharacterPanel
+              character={gameState.selectedCharacter}
+              allCharacters={gameState.characters}
+              onSelectCharacter={selectCharacter}
+            />
+          </div>
+          
+          {/* Actions (narrower) */}
+          <div className="w-32 flex-shrink-0 bg-gray-800 border border-gray-600 rounded-lg p-2 flex flex-col">
+            <h3 className="text-yellow-400 font-bold text-xs mb-1.5 border-b border-gray-600 pb-1">
+              🎮 ДЕЙСТВИЯ
+            </h3>
             
-            {/* Actions */}
-            <div className="w-48 flex-shrink-0 bg-gray-800 border border-gray-600 rounded-lg p-3 overflow-y-auto">
-              <h3 className="text-yellow-400 font-bold text-sm mb-2 border-b border-gray-600 pb-1">
-                🎮 ДЕЙСТВИЯ
-              </h3>
-              <div className="space-y-2">
-                <button
-                  onClick={endTurn}
-                  disabled={gameState.turn !== 'player' || gameState.gameOver || isEnemyTurn}
-                  className={`
-                    w-full py-2 px-3 rounded font-bold text-sm transition-all
-                    ${gameState.turn === 'player' && !gameState.gameOver && !isEnemyTurn
-                      ? 'bg-green-700 hover:bg-green-600 text-white'
-                      : 'bg-gray-700 text-gray-500 cursor-not-allowed'}
-                  `}
-                >
-                  ⏭️ Завершить ход (E)
-                </button>
-                <button
-                  onClick={() => {
-                    setGameState(prev => ({
-                      ...prev,
-                      selectedCharacter: null,
-                      actionMode: 'none',
-                      validMoves: [],
-                      validAttacks: [],
-                    }));
-                  }}
-                  className="w-full py-1.5 px-3 rounded text-xs bg-gray-700 hover:bg-gray-600 text-gray-300 transition-all"
-                >
-                  ❌ Снять выделение (Esc)
-                </button>
-              </div>
-
-              {gameState.selectedCharacter && (
-                <div className="mt-3 pt-2 border-t border-gray-600">
-                  <div className="text-xs text-gray-400 mb-1">Режим:</div>
-                  <div className="flex gap-1">
-                    <button
-                      onClick={() => setGameState(prev => ({ ...prev, actionMode: 'move' }))}
-                      className={`flex-1 py-1 px-2 rounded text-xs ${
-                        gameState.actionMode === 'move' ? 'bg-blue-700 text-white' : 'bg-gray-700 text-gray-400'
-                      }`}
-                    >
-                      🏃 Двиг.
-                    </button>
-                    <button
-                      onClick={() => setGameState(prev => ({ ...prev, actionMode: 'attack' }))}
-                      className={`flex-1 py-1 px-2 rounded text-xs ${
-                        gameState.actionMode === 'attack' ? 'bg-red-700 text-white' : 'bg-gray-700 text-gray-400'
-                      }`}
-                    >
-                      🎯 Атака
-                    </button>
-                  </div>
-                </div>
-              )}
+            {/* Action buttons side by side */}
+            <div className="flex gap-1 mb-2">
+              <button
+                onClick={endTurn}
+                disabled={gameState.turn !== 'player' || gameState.gameOver || isEnemyTurn}
+                className={`
+                  flex-1 py-1 px-1 rounded text-[10px] font-bold transition-all
+                  ${gameState.turn === 'player' && !gameState.gameOver && !isEnemyTurn
+                    ? 'bg-green-700 hover:bg-green-600 text-white'
+                    : 'bg-gray-700 text-gray-500 cursor-not-allowed'}
+                `}
+              >
+                ⏭️ Ход (E)
+              </button>
+              <button
+                onClick={() => {
+                  setGameState(prev => ({
+                    ...prev,
+                    selectedCharacter: null,
+                    actionMode: 'none',
+                    validMoves: [],
+                    validAttacks: [],
+                  }));
+                }}
+                className="flex-1 py-1 px-1 rounded text-[10px] bg-gray-700 hover:bg-gray-600 text-gray-300 transition-all"
+              >
+                ❌ Снять
+              </button>
             </div>
+
+            {/* Mode buttons stacked */}
+            {gameState.selectedCharacter && (
+              <div className="pt-1.5 border-t border-gray-600">
+                <div className="text-[10px] text-gray-400 mb-1">Режим:</div>
+                <div className="flex flex-col gap-1">
+                  <button
+                    onClick={() => setGameState(prev => ({ ...prev, actionMode: 'move' }))}
+                    className={`w-full py-0.5 px-2 rounded text-[10px] ${
+                      gameState.actionMode === 'move' ? 'bg-blue-700 text-white' : 'bg-gray-700 text-gray-400'
+                    }`}
+                  >
+                    🏃 Двиг.
+                  </button>
+                  <button
+                    onClick={() => setGameState(prev => ({ ...prev, actionMode: 'attack' }))}
+                    className={`w-full py-0.5 px-2 rounded text-[10px] ${
+                      gameState.actionMode === 'attack' ? 'bg-red-700 text-white' : 'bg-gray-700 text-gray-400'
+                    }`}
+                  >
+                    🎯 Атака
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Center - Combat Log */}
@@ -427,29 +428,28 @@ function App() {
             <CombatLog log={gameState.combatLog} />
           </div>
 
-          {/* Right - Enemy info and Help */}
-          <div className="w-72 flex-shrink-0 flex flex-col gap-2 overflow-y-auto">
+          {/* Right - Enemy info and Help (narrower) */}
+          <div className="w-52 flex-shrink-0 flex flex-col gap-1.5">
             {/* Enemy info */}
-            <div className="bg-gray-800 border border-gray-600 rounded-lg p-3">
-              <h3 className="text-red-400 font-bold text-sm mb-2 border-b border-gray-600 pb-1">
+            <div className="bg-gray-800 border border-gray-600 rounded-lg p-2">
+              <h3 className="text-red-400 font-bold text-xs mb-1 border-b border-gray-600 pb-1">
                 💀 ПРОТИВНИК
               </h3>
-              <div className="space-y-1">
+              <div className="space-y-0.5">
                 {gameState.characters.filter(c => c.isEnemy && c.isAlive).map(enemy => (
-                  <div key={enemy.id} className="flex items-center gap-2 text-xs bg-gray-900/50 rounded p-1.5">
-                    <span className="text-lg">{enemy.portrait}</span>
-                    <div className="flex-1">
-                      <div className="text-gray-300">{enemy.name}</div>
+                  <div key={enemy.id} className="flex items-center gap-1.5 text-[10px] bg-gray-900/50 rounded p-1">
+                    <span className="text-sm">{enemy.portrait}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-gray-300 truncate">{enemy.name}</div>
                       <div className="flex items-center gap-1">
-                        <div className="w-16 h-1.5 bg-gray-900 rounded-full overflow-hidden">
+                        <div className="w-12 h-1 bg-gray-900 rounded-full overflow-hidden">
                           <div
                             className="h-full bg-red-500 rounded-full"
                             style={{ width: `${(enemy.hp / enemy.maxHp) * 100}%` }}
                           />
                         </div>
-                        <span className="text-gray-500">{enemy.hp}/{enemy.maxHp}</span>
+                        <span className="text-gray-500 text-[9px]">{enemy.hp}/{enemy.maxHp}</span>
                       </div>
-                      <div className="text-gray-500">{enemy.weapon.name}</div>
                     </div>
                   </div>
                 ))}
@@ -458,17 +458,17 @@ function App() {
 
             {/* Help */}
             {showHelp && (
-              <div className="bg-gray-800 border border-gray-600 rounded-lg p-3">
-                <h3 className="text-cyan-400 font-bold text-sm mb-2 border-b border-gray-600 pb-1">
+              <div className="bg-gray-800 border border-gray-600 rounded-lg p-2 flex-1">
+                <h3 className="text-cyan-400 font-bold text-xs mb-1 border-b border-gray-600 pb-1">
                   📖 УПРАВЛЕНИЕ
                 </h3>
-                <div className="text-xs text-gray-400 space-y-1">
-                  <p>1. Выберите наёмника из списка</p>
-                  <p>2. <span className="text-blue-400">Синие клетки</span> — движение (2 АП/клетка)</p>
-                  <p>3. <span className="text-red-400">Красные метки</span> — цели для атаки</p>
-                  <p>4. Нажмите "Завершить ход" или <kbd className="bg-gray-700 px-1 rounded">E</kbd></p>
-                  <p>5. <kbd className="bg-gray-700 px-1 rounded">Esc</kbd> — снять выделение</p>
-                  <p className="text-yellow-400 pt-1">💡 Укрытия снижают шанс попадания!</p>
+                <div className="text-[10px] text-gray-400 space-y-0.5">
+                  <p>1. Выберите наёмника</p>
+                  <p>2. <span className="text-blue-400">Синие</span> — движение</p>
+                  <p>3. <span className="text-red-400">Красные</span> — атака</p>
+                  <p>4. <kbd className="bg-gray-700 px-0.5 rounded">E</kbd> — завершить ход</p>
+                  <p>5. <kbd className="bg-gray-700 px-0.5 rounded">Esc</kbd> — снять</p>
+                  <p className="text-yellow-400 pt-0.5">💡 Укрытия = защита!</p>
                 </div>
               </div>
             )}

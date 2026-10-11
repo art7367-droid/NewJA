@@ -11,28 +11,28 @@ const CharacterPanel: React.FC<CharacterPanelProps> = ({ character, allCharacter
   const mercs = allCharacters.filter(c => !c.isEnemy);
 
   return (
-    <div className="bg-gray-800 border border-gray-600 rounded-lg p-3 w-full">
-      <h3 className="text-yellow-400 font-bold text-sm mb-2 border-b border-gray-600 pb-1">
+    <div className="bg-gray-800 border border-gray-600 rounded-lg p-2 w-full h-full flex flex-col">
+      <h3 className="text-yellow-400 font-bold text-xs mb-1.5 border-b border-gray-600 pb-1">
         ⚔️ ОТРЯД
       </h3>
       
       {/* Character roster */}
-      <div className="grid grid-cols-2 gap-1 mb-3">
+      <div className="grid grid-cols-2 gap-1 mb-2">
         {mercs.map(merc => (
           <button
             key={merc.id}
             onClick={() => merc.isAlive && onSelectCharacter(merc)}
             className={`
-              flex items-center gap-1 p-1 rounded text-xs transition-all
+              flex items-center gap-1 p-1 rounded text-[10px] transition-all
               ${!merc.isAlive ? 'opacity-40 cursor-not-allowed' : 'hover:bg-gray-700 cursor-pointer'}
               ${character?.id === merc.id ? 'bg-gray-600 ring-1 ring-yellow-400' : 'bg-gray-700/50'}
             `}
           >
-            <span className="text-base">{merc.portrait}</span>
-            <div className="flex flex-col items-start">
-              <span className="text-white font-medium leading-tight">{merc.name}</span>
-              <div className="flex items-center gap-1">
-                <div className="w-12 h-1.5 bg-gray-900 rounded-full overflow-hidden">
+            <span className="text-sm">{merc.portrait}</span>
+            <div className="flex flex-col items-start min-w-0">
+              <span className="text-white font-medium leading-tight truncate w-full">{merc.name}</span>
+              <div className="flex items-center gap-0.5">
+                <div className="w-10 h-1 bg-gray-900 rounded-full overflow-hidden">
                   <div
                     className="h-full rounded-full"
                     style={{
@@ -41,7 +41,7 @@ const CharacterPanel: React.FC<CharacterPanelProps> = ({ character, allCharacter
                     }}
                   />
                 </div>
-                <span className="text-gray-400 text-[10px]">{merc.hp}/{merc.maxHp}</span>
+                <span className="text-gray-400 text-[9px]">{merc.hp}</span>
               </div>
             </div>
           </button>
@@ -50,17 +50,17 @@ const CharacterPanel: React.FC<CharacterPanelProps> = ({ character, allCharacter
 
       {/* Selected character details */}
       {character && (
-        <div className="bg-gray-900/50 rounded p-2 border border-gray-600">
-          <div className="flex items-center gap-2 mb-2">
-            <span className="text-2xl">{character.portrait}</span>
-            <div>
-              <div className="text-white font-bold text-sm">{character.name}</div>
-              <div className="text-gray-400 text-xs">{character.weapon.icon} {character.weapon.name}</div>
+        <div className="bg-gray-900/50 rounded p-1.5 border border-gray-600 flex-1">
+          <div className="flex items-center gap-1.5 mb-1.5">
+            <span className="text-xl">{character.portrait}</span>
+            <div className="min-w-0">
+              <div className="text-white font-bold text-xs truncate">{character.name}</div>
+              <div className="text-gray-400 text-[10px] truncate">{character.weapon.icon} {character.weapon.name}</div>
             </div>
           </div>
 
           {/* Stats */}
-          <div className="grid grid-cols-2 gap-1 text-xs mb-2">
+          <div className="grid grid-cols-2 gap-x-2 gap-y-0.5 text-[10px] mb-1.5">
             <div className="flex justify-between">
               <span className="text-gray-400">❤️ HP:</span>
               <span className="text-green-400">{character.hp}/{character.maxHp}</span>
@@ -88,9 +88,9 @@ const CharacterPanel: React.FC<CharacterPanelProps> = ({ character, allCharacter
           </div>
 
           {/* Weapon info */}
-          <div className="bg-gray-800 rounded p-1.5 text-xs border border-gray-700">
-            <div className="text-gray-300 font-bold mb-1">🔫 Оружие:</div>
-            <div className="grid grid-cols-2 gap-x-2 gap-y-0.5">
+          <div className="bg-gray-800 rounded p-1 text-[10px] border border-gray-700">
+            <div className="text-gray-300 font-bold mb-0.5">🔫 Оружие:</div>
+            <div className="grid grid-cols-2 gap-x-1.5 gap-y-0.5">
               <span className="text-gray-400">Урон:</span>
               <span className="text-red-300">{character.weapon.damage}</span>
               <span className="text-gray-400">Дальн.:</span>
