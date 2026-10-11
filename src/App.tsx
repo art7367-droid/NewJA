@@ -180,7 +180,7 @@ function App() {
             visualPosition: undefined,
           })),
         }));
-      }, 300);
+      }, 500); // Increased from 300ms to 500ms for better step animation
     }
   }, [gameState, isEnemyTurn, selectCharacter]);
 
