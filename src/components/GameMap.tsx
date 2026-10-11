@@ -12,9 +12,9 @@ interface GameMapProps {
   projectiles: Projectile[];
 }
 
-const TILE_W = 64;
-const TILE_H = 32;
-const WALL_HEIGHT = 28;
+const TILE_W = 96;
+const TILE_H = 48;
+const WALL_HEIGHT = 56;
 const MAP_COLS = 15;
 const MAP_ROWS = 15;
 
@@ -52,75 +52,127 @@ const getTileColors = (tile: Tile): { top: string; left: string; right: string }
   }
 };
 
-// Enhanced character rendering with detailed SVG
-const CharacterSprite: React.FC<{ character: Character; cx: number; cy: number; selected: boolean }> = ({ character, cx, cy, selected }) => {
+// Enhanced character rendering with detailed SVG and walking animation
+const CharacterSprite: React.FC<{ character: Character; cx: number; cy: number; selected: boolean; isMoving: boolean }> = ({ character, cx, cy, selected, isMoving }) => {
   const isEnemy = character.isEnemy;
   const bodyColor = character.color;
   const skinColor = isEnemy ? '#d4a574' : '#f4c8a0';
   
+  // Walking animation values
+  const legAngle = isMoving ? 15 : 0;
+  const armAngle = isMoving ? 10 : 0;
+  
   return (
     <g>
       {/* Shadow */}
-      <ellipse cx={cx} cy={cy + 2} rx={10} ry={5} fill="black" opacity="0.5" />
+      <ellipse cx={cx} cy={cy + 4} rx={15} ry={7.5} fill="black" opacity="0.5" />
       
-      {/* Legs */}
-      <ellipse cx={cx - 3} cy={cy - 5} rx={3} ry={6} fill={isEnemy ? '#2d2d2d' : '#3d5a3d'} />
-      <ellipse cx={cx + 3} cy={cy - 5} rx={3} ry={6} fill={isEnemy ? '#2d2d2d' : '#3d5a3d'} />
+      {/* Left Leg with walking animation */}
+      <g transform={`rotate(${isMoving ? legAngle : 0} ${cx - 4.5} ${cy - 10})`}>
+        <ellipse cx={cx - 4.5} cy={cy - 10} rx={4.5} ry={9} fill={isEnemy ? '#2d2d2d' : '#3d5a3d'} />
+        {isMoving && (
+          <animateTransform
+            attributeName="transform"
+            type="rotate"
+            values={`${legAngle} ${cx - 4.5} ${cy - 10};${-legAngle} ${cx - 4.5} ${cy - 10};${legAngle} ${cx - 4.5} ${cy - 10}`}
+            dur="0.4s"
+            repeatCount="indefinite"
+          />
+        )}
+      </g>
+      
+      {/* Right Leg with walking animation */}
+      <g transform={`rotate(${isMoving ? -legAngle : 0} ${cx + 4.5} ${cy - 10})`}>
+        <ellipse cx={cx + 4.5} cy={cy - 10} rx={4.5} ry={9} fill={isEnemy ? '#2d2d2d' : '#3d5a3d'} />
+        {isMoving && (
+          <animateTransform
+            attributeName="transform"
+            type="rotate"
+            values={`${-legAngle} ${cx + 4.5} ${cy - 10};${legAngle} ${cx + 4.5} ${cy - 10};${-legAngle} ${cx + 4.5} ${cy - 10}`}
+            dur="0.4s"
+            repeatCount="indefinite"
+          />
+        )}
+      </g>
       
       {/* Body/Torso */}
-      <ellipse cx={cx} cy={cy - 15} rx={8} ry={10} fill={bodyColor} />
+      <ellipse cx={cx} cy={cy - 30} rx={12} ry={15} fill={bodyColor} />
       
       {/* Vest/Armor details */}
-      <rect x={cx - 6} y={cy - 20} width={12} height={8} rx={2} fill={isEnemy ? '#1a1a1a' : '#2d4a2d'} opacity="0.7" />
+      <rect x={cx - 9} y={cy - 40} width={18} height={12} rx={3} fill={isEnemy ? '#1a1a1a' : '#2d4a2d'} opacity="0.7" />
       
-      {/* Arms */}
-      <ellipse cx={cx - 8} cy={cy - 14} rx={3} ry={7} fill={bodyColor} transform={`rotate(-20 ${cx - 8} ${cy - 14})`} />
-      <ellipse cx={cx + 8} cy={cy - 14} rx={3} ry={7} fill={bodyColor} transform={`rotate(20 ${cx + 8} ${cy - 14})`} />
+      {/* Left Arm with walking animation */}
+      <g transform={`rotate(${isMoving ? -armAngle : -20} ${cx - 12} ${cy - 28})`}>
+        <ellipse cx={cx - 12} cy={cy - 28} rx={4.5} ry={10.5} fill={bodyColor} />
+        {isMoving && (
+          <animateTransform
+            attributeName="transform"
+            type="rotate"
+            values={`${-armAngle} ${cx - 12} ${cy - 28};${armAngle} ${cx - 12} ${cy - 28};${-armAngle} ${cx - 12} ${cy - 28}`}
+            dur="0.4s"
+            repeatCount="indefinite"
+          />
+        )}
+      </g>
+      
+      {/* Right Arm with walking animation */}
+      <g transform={`rotate(${isMoving ? armAngle : 20} ${cx + 12} ${cy - 28})`}>
+        <ellipse cx={cx + 12} cy={cy - 28} rx={4.5} ry={10.5} fill={bodyColor} />
+        {isMoving && (
+          <animateTransform
+            attributeName="transform"
+            type="rotate"
+            values={`${armAngle} ${cx + 12} ${cy - 28};${-armAngle} ${cx + 12} ${cy - 28};${armAngle} ${cx + 12} ${cy - 28}`}
+            dur="0.4s"
+            repeatCount="indefinite"
+          />
+        )}
+      </g>
       
       {/* Hands */}
-      <circle cx={cx - 9} cy={cy - 8} r={2.5} fill={skinColor} />
-      <circle cx={cx + 9} cy={cy - 8} r={2.5} fill={skinColor} />
+      <circle cx={cx - 13.5} cy={cy - 18} r={3.75} fill={skinColor} />
+      <circle cx={cx + 13.5} cy={cy - 18} r={3.75} fill={skinColor} />
       
       {/* Head */}
-      <circle cx={cx} cy={cy - 28} r={6} fill={skinColor} />
+      <circle cx={cx} cy={cy - 56} r={9} fill={skinColor} />
       
       {/* Helmet/Hat */}
       {isEnemy ? (
-        <ellipse cx={cx} cy={cy - 32} rx={7} ry={4} fill="#4a4a4a" />
+        <ellipse cx={cx} cy={cy - 62} rx={10.5} ry={6} fill="#4a4a4a" />
       ) : (
-        <ellipse cx={cx} cy={cy - 32} rx={7} ry={4} fill={character.color === '#22c55e' ? '#2d5a2d' : character.color === '#3b82f6' ? '#1e3a5a' : '#4a3a2a'} />
+        <ellipse cx={cx} cy={cy - 62} rx={10.5} ry={6} fill={character.color === '#22c55e' ? '#2d5a2d' : character.color === '#3b82f6' ? '#1e3a5a' : '#4a3a2a'} />
       )}
       
       {/* Face details */}
-      <circle cx={cx - 2} cy={cy - 28} r={0.8} fill="#000" />
-      <circle cx={cx + 2} cy={cy - 28} r={0.8} fill="#000" />
+      <circle cx={cx - 3} cy={cy - 56} r={1.2} fill="#000" />
+      <circle cx={cx + 3} cy={cy - 56} r={1.2} fill="#000" />
       
       {/* Weapon */}
-      <rect x={cx + 6} y={cy - 18} width={12} height={2} rx={1} fill="#3d3d3d" transform={`rotate(-30 ${cx + 6} ${cy - 18})`} />
-      <rect x={cx + 10} y={cy - 20} width={3} height={4} rx={1} fill="#2d2d2d" transform={`rotate(-30 ${cx + 10} ${cy - 20})`} />
+      <rect x={cx + 9} y={cy - 36} width={18} height={3} rx={1.5} fill="#3d3d3d" transform={`rotate(-30 ${cx + 9} ${cy - 36})`} />
+      <rect x={cx + 15} y={cy - 40} width={4.5} height={6} rx={1.5} fill="#2d2d2d" transform={`rotate(-30 ${cx + 15} ${cy - 40})`} />
       
       {/* Selection ring */}
       {selected && (
-        <ellipse cx={cx} cy={cy} rx={12} ry={6} fill="none" stroke="#fbbf24" strokeWidth={2.5} opacity={0.8}>
+        <ellipse cx={cx} cy={cy} rx={18} ry={9} fill="none" stroke="#fbbf24" strokeWidth={3.75} opacity={0.8}>
           <animate attributeName="opacity" values="0.8;0.4;0.8" dur="1.5s" repeatCount="indefinite" />
         </ellipse>
       )}
       
       {/* Enemy indicator */}
       {isEnemy && (
-        <circle cx={cx + 10} cy={cy - 30} r={3} fill="#ef4444" opacity={0.8}>
-          <animate attributeName="r" values="3;4;3" dur="1s" repeatCount="indefinite" />
+        <circle cx={cx + 15} cy={cy - 60} r={4.5} fill="#ef4444" opacity={0.8}>
+          <animate attributeName="r" values="4.5;6;4.5" dur="1s" repeatCount="indefinite" />
         </circle>
       )}
       
       {/* HP bar */}
-      <rect x={cx - 12} y={cy - 42} width={24} height={3} rx={1.5} fill="#000" opacity="0.8" />
+      <rect x={cx - 18} y={cy - 72} width={36} height={4.5} rx={2.25} fill="#000" opacity="0.8" />
       <rect
-        x={cx - 12}
-        y={cy - 42}
-        width={24 * (character.hp / character.maxHp)}
-        height={3}
-        rx={1.5}
+        x={cx - 18}
+        y={cy - 72}
+        width={36 * (character.hp / character.maxHp)}
+        height={4.5}
+        rx={2.25}
         fill={
           character.hp / character.maxHp > 0.5
             ? '#22c55e'
@@ -135,9 +187,9 @@ const CharacterSprite: React.FC<{ character: Character; cx: number; cy: number; 
       {/* Name tag */}
       <text
         x={cx}
-        y={cy - 46}
+        y={cy - 78}
         textAnchor="middle"
-        fontSize="7"
+        fontSize="10"
         fill={isEnemy ? '#fca5a5' : '#bbf7d0'}
         fontWeight="bold"
         style={{ textShadow: '1px 1px 2px black' }}
@@ -176,9 +228,9 @@ const ProjectileAnim: React.FC<{ projectile: Projectile; offsetX: number; offset
   const toIsoPos = toIso(projectile.to.x, projectile.to.y);
 
   const fromX = fromIso.sx + offsetX;
-  const fromY = fromIso.sy + offsetY - 18;
+  const fromY = fromIso.sy + offsetY - 36;
   const toX = toIsoPos.sx + offsetX;
-  const toY = toIsoPos.sy + offsetY - 18;
+  const toY = toIsoPos.sy + offsetY - 36;
 
   const currentX = fromX + (toX - fromX) * progress;
   const currentY = fromY + (toY - fromY) * progress;
@@ -197,32 +249,32 @@ const ProjectileAnim: React.FC<{ projectile: Projectile; offsetX: number; offset
               x2={currentX}
               y2={currentY}
               stroke="#fbbf24"
-              strokeWidth="2.5"
+              strokeWidth="3.5"
               opacity="0.9"
             />
           )}
           
           {/* Bullet glow */}
-          <circle cx={currentX} cy={currentY} r="6" fill="#fbbf24" opacity="0.3">
-            <animate attributeName="r" values="6;8;6" dur="0.1s" repeatCount="indefinite" />
+          <circle cx={currentX} cy={currentY} r="9" fill="#fbbf24" opacity="0.3">
+            <animate attributeName="r" values="9;12;9" dur="0.1s" repeatCount="indefinite" />
           </circle>
           
           {/* Bullet core */}
-          <circle cx={currentX} cy={currentY} r="3" fill="#ffffff">
-            <animate attributeName="r" values="2.5;3.5;2.5" dur="0.1s" repeatCount="indefinite" />
+          <circle cx={currentX} cy={currentY} r="4.5" fill="#ffffff">
+            <animate attributeName="r" values="3.75;5.25;3.75" dur="0.1s" repeatCount="indefinite" />
           </circle>
           
           {/* Muzzle flash */}
           {progress < 0.1 && (
             <>
-              <circle cx={fromX} cy={fromY} r={15 * (1 - progress / 0.1)} fill="#ffffff" opacity={0.9 * (1 - progress / 0.1)}>
-                <animate attributeName="r" values={`${15 * (1 - progress / 0.1)};${20 * (1 - progress / 0.1)};${15 * (1 - progress / 0.1)}`} dur="0.05s" repeatCount="indefinite" />
+              <circle cx={fromX} cy={fromY} r={22.5 * (1 - progress / 0.1)} fill="#ffffff" opacity={0.9 * (1 - progress / 0.1)}>
+                <animate attributeName="r" values={`${22.5 * (1 - progress / 0.1)};${30 * (1 - progress / 0.1)};${22.5 * (1 - progress / 0.1)}`} dur="0.05s" repeatCount="indefinite" />
               </circle>
-              <circle cx={fromX} cy={fromY} r={10 * (1 - progress / 0.1)} fill="#fbbf24" opacity={0.8 * (1 - progress / 0.1)} />
+              <circle cx={fromX} cy={fromY} r={15 * (1 - progress / 0.1)} fill="#fbbf24" opacity={0.8 * (1 - progress / 0.1)} />
               {/* Flash rays */}
               {[0, 45, 90, 135, 180, 225, 270, 315].map((angle, i) => {
                 const rad = (angle * Math.PI) / 180;
-                const len = 8 * (1 - progress / 0.1);
+                const len = 12 * (1 - progress / 0.1);
                 return (
                   <line
                     key={i}
@@ -231,7 +283,7 @@ const ProjectileAnim: React.FC<{ projectile: Projectile; offsetX: number; offset
                     x2={fromX + Math.cos(rad) * len}
                     y2={fromY + Math.sin(rad) * len}
                     stroke="#fbbf24"
-                    strokeWidth="1.5"
+                    strokeWidth="2.25"
                     opacity={0.7 * (1 - progress / 0.1)}
                   />
                 );
@@ -246,8 +298,8 @@ const ProjectileAnim: React.FC<{ projectile: Projectile; offsetX: number; offset
           {projectile.hit ? (
             <>
               {/* Impact flash */}
-              <circle cx={toX} cy={toY} r="15" fill={projectile.critical ? '#ef4444' : '#fbbf24'} opacity="0.9">
-                <animate attributeName="r" values="5;20;10" dur="0.3s" fill="freeze" />
+              <circle cx={toX} cy={toY} r="22.5" fill={projectile.critical ? '#ef4444' : '#fbbf24'} opacity="0.9">
+                <animate attributeName="r" values="7.5;30;15" dur="0.3s" fill="freeze" />
                 <animate attributeName="opacity" values="1;0.5;0" dur="0.4s" fill="freeze" />
               </circle>
               
@@ -255,13 +307,13 @@ const ProjectileAnim: React.FC<{ projectile: Projectile; offsetX: number; offset
               {Array.from({ length: projectile.critical ? 12 : 6 }).map((_, i) => {
                 const angle = (i * 360) / (projectile.critical ? 12 : 6);
                 const rad = (angle * Math.PI) / 180;
-                const dist = 25 + Math.random() * 10;
+                const dist = 37.5 + Math.random() * 15;
                 return (
-                  <circle key={i} cx={toX} cy={toY} r="2" fill={projectile.critical ? '#ef4444' : '#fbbf24'}>
+                  <circle key={i} cx={toX} cy={toY} r="3" fill={projectile.critical ? '#ef4444' : '#fbbf24'}>
                     <animate attributeName="cx" values={`${toX};${toX + Math.cos(rad) * dist}`} dur="0.3s" fill="freeze" />
                     <animate attributeName="cy" values={`${toY};${toY + Math.sin(rad) * dist}`} dur="0.3s" fill="freeze" />
                     <animate attributeName="opacity" values="1;0" dur="0.3s" fill="freeze" />
-                    <animate attributeName="r" values="2;0" dur="0.3s" fill="freeze" />
+                    <animate attributeName="r" values="3;0" dur="0.3s" fill="freeze" />
                   </circle>
                 );
               })}
@@ -269,20 +321,20 @@ const ProjectileAnim: React.FC<{ projectile: Projectile; offsetX: number; offset
               {/* Damage number */}
               <text
                 x={toX}
-                y={toY - 25}
+                y={toY - 37.5}
                 textAnchor="middle"
-                fontSize="16"
+                fontSize="24"
                 fontWeight="bold"
                 fill={projectile.critical ? '#ef4444' : '#fbbf24'}
                 style={{ textShadow: '2px 2px 4px black' }}
               >
                 {projectile.critical ? '💥 КРИТ!' : `-${projectile.damage}`}
-                <animate attributeName="y" values={`${toY - 25};${toY - 50}`} dur="0.8s" fill="freeze" />
+                <animate attributeName="y" values={`${toY - 37.5};${toY - 75}`} dur="0.8s" fill="freeze" />
                 <animate attributeName="opacity" values="1;0" dur="1s" fill="freeze" />
               </text>
               
               {projectile.killed && (
-                <text x={toX} y={toY - 55} textAnchor="middle" fontSize="18" fill="#ef4444" fontWeight="bold">
+                <text x={toX} y={toY - 82.5} textAnchor="middle" fontSize="27" fill="#ef4444" fontWeight="bold">
                   ☠️ УБИТ!
                   <animate attributeName="opacity" values="1;0" dur="1.2s" fill="freeze" />
                 </text>
@@ -291,11 +343,11 @@ const ProjectileAnim: React.FC<{ projectile: Projectile; offsetX: number; offset
           ) : (
             <>
               {/* Miss effect - dust cloud */}
-              <circle cx={toX} cy={toY} r="8" fill="#9ca3af" opacity="0.6">
-                <animate attributeName="r" values="3;12" dur="0.4s" fill="freeze" />
+              <circle cx={toX} cy={toY} r="12" fill="#9ca3af" opacity="0.6">
+                <animate attributeName="r" values="4.5;18" dur="0.4s" fill="freeze" />
                 <animate attributeName="opacity" values="0.8;0" dur="0.4s" fill="freeze" />
               </circle>
-              <text x={toX} y={toY - 15} textAnchor="middle" fontSize="11" fill="#9ca3af" fontStyle="italic">
+              <text x={toX} y={toY - 22.5} textAnchor="middle" fontSize="16" fill="#9ca3af" fontStyle="italic">
                 промах
                 <animate attributeName="opacity" values="1;0" dur="0.6s" fill="freeze" />
               </text>
@@ -419,8 +471,8 @@ const GameMap: React.FC<GameMapProps> = ({
                         {/* Building details - windows */}
                         {tile.type === 'building' && (
                           <>
-                            <rect x={cx - 8} y={cy - WALL_HEIGHT + 5} width={4} height={6} fill="#2d2d2d" opacity="0.6" />
-                            <rect x={cx + 4} y={cy - WALL_HEIGHT + 5} width={4} height={6} fill="#2d2d2d" opacity="0.6" />
+                            <rect x={cx - 12} y={cy - WALL_HEIGHT + 8} width={6} height={9} fill="#2d2d2d" opacity="0.6" />
+                            <rect x={cx + 6} y={cy - WALL_HEIGHT + 8} width={6} height={9} fill="#2d2d2d" opacity="0.6" />
                           </>
                         )}
                       </>
@@ -438,17 +490,17 @@ const GameMap: React.FC<GameMapProps> = ({
                   {tile.type === 'tree' && (
                     <>
                       {/* Tree trunk */}
-                      <rect x={cx - 2} y={cy - 18} width={4} height={14} fill="#5c3d1e" rx="1" />
+                      <rect x={cx - 3} y={cy - 27} width={6} height={21} fill="#5c3d1e" rx="1.5" />
                       {/* Tree canopy with animation */}
                       <g>
-                        <ellipse cx={cx} cy={cy - 22} rx={11} ry={13} fill="#2d7a22">
-                          <animate attributeName="rx" values="11;11.5;11" dur="4s" repeatCount="indefinite" />
+                        <ellipse cx={cx} cy={cy - 33} rx={16.5} ry={19.5} fill="#2d7a22">
+                          <animate attributeName="rx" values="16.5;17.25;16.5" dur="4s" repeatCount="indefinite" />
                         </ellipse>
-                        <ellipse cx={cx - 5} cy={cy - 20} rx={8} ry={10} fill="#3d8f34" />
-                        <ellipse cx={cx + 5} cy={cy - 24} rx={7} ry={9} fill="#4aa340" />
+                        <ellipse cx={cx - 7.5} cy={cy - 30} rx={12} ry={15} fill="#3d8f34" />
+                        <ellipse cx={cx + 7.5} cy={cy - 36} rx={10.5} ry={13.5} fill="#4aa340" />
                         {/* Leaf details */}
-                        <circle cx={cx - 3} cy={cy - 25} r={2} fill="#5ab350" opacity="0.7" />
-                        <circle cx={cx + 4} cy={cy - 20} r={1.5} fill="#5ab350" opacity="0.6" />
+                        <circle cx={cx - 4.5} cy={cy - 37.5} r={3} fill="#5ab350" opacity="0.7" />
+                        <circle cx={cx + 6} cy={cy - 30} r={2.25} fill="#5ab350" opacity="0.6" />
                       </g>
                     </>
                   )}
@@ -464,7 +516,7 @@ const GameMap: React.FC<GameMapProps> = ({
               )}
 
               {tile.coverBonus > 0 && !isWall && !character && (
-                <text x={cx} y={cy + 4} textAnchor="middle" fontSize="8" fill="#fbbf24" opacity="0.7">
+                <text x={cx} y={cy + 6} textAnchor="middle" fontSize="12" fill="#fbbf24" opacity="0.7">
                   {tile.coverBonus}
                 </text>
               )}
@@ -499,9 +551,10 @@ const GameMap: React.FC<GameMapProps> = ({
                 const charIso = toIso(charPos.x, charPos.y);
                 const charCx = charIso.sx + offsetX;
                 const charCy = charIso.sy + offsetY;
+                const isMoving = character.visualPosition !== undefined;
                 return (
                   <g style={{ transition: 'transform 0.3s ease-out' }}>
-                    <CharacterSprite character={character} cx={charCx} cy={charCy} selected={selected} />
+                    <CharacterSprite character={character} cx={charCx} cy={charCy} selected={selected} isMoving={isMoving} />
                   </g>
                 );
               })()}
