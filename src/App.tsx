@@ -342,7 +342,7 @@ function App() {
         </div>
 
         {/* Center - Map */}
-        <div className="flex-1 flex flex-col items-center justify-center gap-3">
+        <div className="flex-1 flex flex-col items-center justify-center gap-2 overflow-auto">
           <GameMap
             map={gameState.map}
             characters={gameState.characters}
@@ -354,11 +354,11 @@ function App() {
           />
 
           {/* Legend */}
-          <div className="flex gap-4 text-xs text-gray-400">
-            <span>🟦 — движение</span>
-            <span>🟥 — атака</span>
-            <span>🟨 — выбран</span>
-            <span>Цифры — укрытие</span>
+          <div className="flex gap-4 text-xs text-gray-400 flex-wrap justify-center">
+            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-blue-500/50 border border-blue-400 inline-block"></span> движение</span>
+            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-red-500/50 border border-red-400 inline-block"></span> атака</span>
+            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded border-2 border-yellow-400 inline-block"></span> выбран</span>
+            <span className="text-yellow-400">Цифры — бонус укрытия</span>
           </div>
         </div>
 

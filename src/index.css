@@ -1,1 +1,49 @@
 @import "tailwindcss";
+
+/* Custom scrollbar */
+.scrollbar-thin::-webkit-scrollbar {
+  width: 4px;
+}
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: #1f2937;
+  border-radius: 2px;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: #4b5563;
+  border-radius: 2px;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: #6b7280;
+}
+
+/* Smooth animations */
+@keyframes pulse-glow {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.6; }
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 1.5s ease-in-out infinite;
+}
+
+/* Prevent text selection on map */
+svg {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Remove default focus outlines */
+button:focus {
+  outline: none;
+}
+
+/* Smooth transitions for game elements */
+* {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  overflow: hidden;
+  background: #111827;
+}
