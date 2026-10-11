@@ -353,7 +353,7 @@ function App() {
         {/* Bottom panels */}
         <div className="flex gap-2 h-56 flex-shrink-0">
           {/* Left - Characters (wider) */}
-          <div className="w-80 flex-shrink-0">
+          <div className="w-96 flex-shrink-0">
             <CharacterPanel
               character={gameState.selectedCharacter}
               allCharacters={gameState.characters}
@@ -424,7 +424,7 @@ function App() {
           </div>
 
           {/* Center - Combat Log */}
-          <div className="flex-1 min-w-0">
+          <div className="flex-1 min-w-0 max-w-xs">
             <CombatLog log={gameState.combatLog} />
           </div>
 

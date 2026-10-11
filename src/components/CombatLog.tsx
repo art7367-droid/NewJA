@@ -14,22 +14,22 @@ const CombatLog: React.FC<CombatLogProps> = ({ log }) => {
   }, [log]);
 
   return (
-    <div className="bg-gray-800 border border-gray-600 rounded-lg p-2 w-full h-full flex flex-col">
-      <h3 className="text-yellow-400 font-bold text-xs mb-1 border-b border-gray-600 pb-1">
+    <div className="bg-gray-800 border border-gray-600 rounded-lg p-1.5 w-full h-full flex flex-col">
+      <h3 className="text-yellow-400 font-bold text-[10px] mb-0.5 border-b border-gray-600 pb-0.5">
         📋 БОЕВОЙ ЖУРНАЛ
       </h3>
       <div
         ref={scrollRef}
-        className="flex-1 overflow-y-auto text-[10px] space-y-0.5 scrollbar-thin"
+        className="flex-1 overflow-y-auto text-[9px] space-y-0.5 scrollbar-thin"
       >
         {log.length === 0 ? (
-          <p className="text-gray-500 italic">Выберите наёмника и начните ход...</p>
+          <p className="text-gray-500 italic text-[9px]">Выберите наёмника и начните ход...</p>
         ) : (
           log.map((entry, i) => (
             <div
               key={i}
               className={`
-                py-0.5 px-1 rounded
+                py-0.5 px-1 rounded leading-tight
                 ${entry.includes('КРИТ') ? 'text-yellow-300 bg-yellow-900/20' : ''}
                 ${entry.includes('УБИТ') ? 'text-red-400 bg-red-900/20 font-bold' : ''}
                 ${entry.includes('промах') ? 'text-gray-500' : ''}
