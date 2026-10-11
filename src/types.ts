@@ -16,6 +16,7 @@ export interface Character {
   id: string;
   name: string;
   position: Position;
+  visualPosition?: Position; // For smooth animation
   hp: number;
   maxHp: number;
   ap: number;

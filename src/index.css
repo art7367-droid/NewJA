@@ -26,6 +26,27 @@
   animation: pulse-glow 1.5s ease-in-out infinite;
 }
 
+/* Character movement animation */
+@keyframes character-move {
+  0% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+  100% { transform: translateY(0); }
+}
+
+.character-moving {
+  animation: character-move 0.3s ease-in-out;
+}
+
+/* Hit flash animation */
+@keyframes hit-flash {
+  0%, 100% { filter: brightness(1); }
+  50% { filter: brightness(2) saturate(0); }
+}
+
+.character-hit {
+  animation: hit-flash 0.3s ease-in-out;
+}
+
 /* Prevent text selection on map */
 svg {
   user-select: none;
@@ -46,4 +67,23 @@ button:focus {
 body {
   overflow: auto;
   background: #111827;
+}
+
+/* Smooth SVG transitions */
+svg g {
+  transition: transform 0.3s ease-out;
+}
+
+/* Button hover effects */
+button {
+  transition: all 0.2s ease;
+}
+
+button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+}
+
+button:active:not(:disabled) {
+  transform: translateY(0);
 }

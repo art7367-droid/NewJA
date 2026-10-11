@@ -145,6 +145,7 @@ function App() {
           if (c.id === selectedCharacter.id) {
             return {
               ...c,
+              visualPosition: { ...c.position }, // Store current position for animation
               position: { x, y },
               ap: c.ap - moveCost,
             };
@@ -169,6 +170,17 @@ function App() {
           combatLog: [...prev.combatLog, `${selectedCharacter.name} перемещается`],
         };
       });
+
+      // Clear visual position after animation
+      setTimeout(() => {
+        setGameState(prev => ({
+          ...prev,
+          characters: prev.characters.map(c => ({
+            ...c,
+            visualPosition: undefined,
+          })),
+        }));
+      }, 300);
     }
   }, [gameState, isEnemyTurn, selectCharacter]);
 
