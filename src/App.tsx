@@ -79,7 +79,7 @@ function App() {
           from: { ...selectedCharacter.position },
           to: { ...target.position },
           startTime: Date.now(),
-          duration: 800, // 800ms total animation
+          duration: 400, // Fast bullet flight
           hit: result.hit,
           critical: result.critical,
           damage: result.damage,
@@ -93,7 +93,7 @@ function App() {
         // Remove projectile after animation
         setTimeout(() => {
           setProjectiles(prev => prev.filter(p => p.id !== newProjectile.id));
-        }, 1000);
+        }, 600);
 
         setGameState(prev => {
           const newChars = prev.characters.map(c => {
@@ -186,49 +186,55 @@ function App() {
       combatLog: [...prev.combatLog, `--- Ход противника ---`],
     }));
 
-    // Process enemy turn with delay for visual effect
+    // Process enemy turn with sequential delays
     setTimeout(() => {
-      setGameState(prev => {
-        const result = executeEnemyTurn(prev);
-        const newLog = [...prev.combatLog];
-        
-        for (const action of result.actions) {
-          newLog.push(`${action.character.portrait} ${action.character.name}: ${action.action}`);
-          
-          // Create projectile animation for enemy attacks
-          if (action.type === 'attack' && action.target && action.result) {
-            const enemyProjectile: Projectile = {
-              id: `proj-${projectileIdCounter++}`,
-              from: { ...action.character.position },
-              to: { ...action.target.position },
-              startTime: Date.now(),
-              duration: 800,
-              hit: action.result.hit,
-              critical: action.result.critical,
-              damage: action.result.damage,
-              killed: action.result.killed,
-              attackerName: action.character.name,
-              targetName: action.target.name,
-            };
+      const result = executeEnemyTurn(gameState);
+      
+      // Execute each action with its delay
+      result.actions.forEach((action, index) => {
+        setTimeout(() => {
+          setGameState(prev => {
+            const newLog = [...prev.combatLog, `${action.character.portrait} ${action.character.name}: ${action.action}`];
             
-            setProjectiles(p => [...p, enemyProjectile]);
-            setTimeout(() => {
-              setProjectiles(p => p.filter(pr => pr.id !== enemyProjectile.id));
-            }, 1000);
-          }
-        }
+            // Create projectile animation for enemy attacks
+            if (action.type === 'attack' && action.target && action.result) {
+              const enemyProjectile: Projectile = {
+                id: `proj-${projectileIdCounter++}`,
+                from: { ...action.character.position },
+                to: { ...action.target.position },
+                startTime: Date.now(),
+                duration: 400, // Fast bullet flight
+                hit: action.result.hit,
+                critical: action.result.critical,
+                damage: action.result.damage,
+                killed: action.result.killed,
+                attackerName: action.character.name,
+                targetName: action.target.name,
+              };
+              
+              setProjectiles(p => [...p, enemyProjectile]);
+              setTimeout(() => {
+                setProjectiles(p => p.filter(pr => pr.id !== enemyProjectile.id));
+              }, 600);
+            }
 
-        const gameOverCheck = checkGameOver(prev.characters);
+            const gameOverCheck = checkGameOver(prev.characters);
 
-        return {
-          ...prev,
-          combatLog: newLog,
-          gameOver: gameOverCheck.over,
-          winner: gameOverCheck.winner,
-        };
+            return {
+              ...prev,
+              combatLog: newLog,
+              gameOver: gameOverCheck.over,
+              winner: gameOverCheck.winner,
+            };
+          });
+        }, action.delay);
       });
 
-      // Start new player turn
+      // Start new player turn after all enemy actions
+      const totalEnemyTime = result.actions.length > 0 
+        ? result.actions[result.actions.length - 1].delay + 1000 
+        : 500;
+      
       setTimeout(() => {
         setGameState(prev => {
           const newTurn = prev.turnNumber + 1;
@@ -251,7 +257,7 @@ function App() {
           };
         });
         setIsEnemyTurn(false);
-      }, 1000);
+      }, totalEnemyTime);
     }, 500);
   }, [gameState.turn, gameState.gameOver]);
 

@@ -158,12 +158,16 @@ export interface EnemyAction {
   action: string;
   target?: Character;
   result?: import('./types').CombatResult;
+  delay: number; // Delay before this action executes (in ms)
 }
 
 export const executeEnemyTurn = (state: GameState): { actions: EnemyAction[] } => {
   const actions: EnemyAction[] = [];
   const enemies = state.characters.filter(c => c.isEnemy && c.isAlive);
   const playerChars = state.characters.filter(c => !c.isEnemy && c.isAlive);
+
+  let totalDelay = 0;
+  const DELAY_BETWEEN_ACTIONS = 800; // 800ms between each enemy action
 
   for (const enemy of enemies) {
     if (playerChars.length === 0) break;
@@ -185,7 +189,14 @@ export const executeEnemyTurn = (state: GameState): { actions: EnemyAction[] } =
     // Try to attack if in range
     if (closestDist <= enemy.weapon.range) {
       const result = resolveCombat(enemy, closestPlayer, state.map);
-      actions.push({ type: 'attack', character: enemy, action: result.message, target: closestPlayer, result });
+      actions.push({ 
+        type: 'attack', 
+        character: enemy, 
+        action: result.message, 
+        target: closestPlayer, 
+        result,
+        delay: totalDelay
+      });
       
       closestPlayer.hp = Math.max(0, closestPlayer.hp - result.damage);
       if (result.killed) {
@@ -193,6 +204,7 @@ export const executeEnemyTurn = (state: GameState): { actions: EnemyAction[] } =
       }
       
       enemy.ap = Math.max(0, enemy.ap - enemy.weapon.apCost);
+      totalDelay += DELAY_BETWEEN_ACTIONS;
     } else {
       // Move towards closest player
       const dx = Math.sign(closestPlayer.position.x - enemy.position.x);
@@ -246,7 +258,8 @@ export const executeEnemyTurn = (state: GameState): { actions: EnemyAction[] } =
       }
       
       if (moved > 0) {
-        actions.push({ type: 'move', character: enemy, action: `двигается` });
+        actions.push({ type: 'move', character: enemy, action: `двигается`, delay: totalDelay });
+        totalDelay += DELAY_BETWEEN_ACTIONS;
       }
     }
   }

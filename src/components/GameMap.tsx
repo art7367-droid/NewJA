@@ -89,52 +89,69 @@ const ProjectileAnim: React.FC<{ projectile: Projectile; offsetX: number; offset
   const toX = toIsoPos.sx + offsetX;
   const toY = toIsoPos.sy + offsetY - 20;
 
-  // Current position with arc
+  // Current position - straight line (no arc)
   const currentX = fromX + (toX - fromX) * progress;
-  const arcHeight = -40; // Arc up
-  const currentY = fromY + (toY - fromY) * progress + arcHeight * Math.sin(progress * Math.PI);
+  const currentY = fromY + (toY - fromY) * progress;
 
   if (progress >= 1 && !showImpact) return null;
 
   return (
     <g>
-      {/* Trail */}
+      {/* Trail - short tracer behind bullet */}
       {!showImpact && (
         <>
-          <line
-            x1={fromX}
-            y1={fromY}
-            x2={currentX}
-            y2={currentY}
-            stroke="#fbbf24"
-            strokeWidth="1.5"
-            opacity="0.6"
-            strokeDasharray="4,2"
-          />
-          {/* Bullet/projectile */}
+          {/* Short tracer line (only last 15% of path) */}
+          {progress > 0.1 && (
+            <line
+              x1={fromX + (toX - fromX) * Math.max(0, progress - 0.15)}
+              y1={fromY + (toY - fromY) * Math.max(0, progress - 0.15)}
+              x2={currentX}
+              y2={currentY}
+              stroke="#fbbf24"
+              strokeWidth="2"
+              opacity="0.9"
+            />
+          )}
+          {/* Bullet - bright point */}
           <circle
             cx={currentX}
             cy={currentY}
-            r="3"
-            fill="#fbbf24"
-            className="animate-pulse"
+            r="2.5"
+            fill="#ffffff"
           >
             <animate
               attributeName="r"
-              values="3;4;3"
-              dur="0.2s"
+              values="2;3;2"
+              dur="0.1s"
               repeatCount="indefinite"
             />
           </circle>
-          {/* Muzzle flash at origin */}
-          {progress < 0.3 && (
-            <circle
-              cx={fromX}
-              cy={fromY}
-              r={8 * (1 - progress / 0.3)}
-              fill="#fbbf24"
-              opacity={0.8 * (1 - progress / 0.3)}
-            />
+          {/* Glow around bullet */}
+          <circle
+            cx={currentX}
+            cy={currentY}
+            r="5"
+            fill="#fbbf24"
+            opacity="0.4"
+          />
+          {/* Muzzle flash at origin - quick bright flash */}
+          {progress < 0.15 && (
+            <>
+              <circle
+                cx={fromX}
+                cy={fromY}
+                r={12 * (1 - progress / 0.15)}
+                fill="#ffffff"
+                opacity={0.9 * (1 - progress / 0.15)}
+              />
+              <circle
+                cx={fromX}
+                cy={fromY}
+                r={8 * (1 - progress / 0.15)}
+                fill="#fbbf24"
+                opacity={0.7 * (1 - progress / 0.15)}
+              />
+            </>
           )}
         </>
       )}
