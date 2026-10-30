@@ -484,6 +484,7 @@ const GameMap: React.FC<GameMapProps> = ({
 
         <rect x={0} y={0} width={svgWidth} height={svgHeight} fill="#1a1a2e" />
 
+        {/* FIRST PASS: Ground tiles (grass, floor, roads, water, trees) */}
         {renderOrder.map(({ x, y }) => {
           const tile = map[y][x];
           const { sx, sy } = toIso(x, y);
@@ -492,14 +493,9 @@ const GameMap: React.FC<GameMapProps> = ({
           const colors = getTileColors(tile);
           const isWall = tile.type === 'wall' || tile.type === 'building';
           const isFloor = tile.type === 'floor';
-          const character = getCharacterAt(x, y);
-          const isMove = isValidMove(x, y);
-          const isAttack = isValidAttack(x, y);
-          const selected = isSelected(x, y);
-          const characterInside = hasCharacterInsideBuilding(characters, map);
 
           return (
-            <g key={`tile-${x}-${y}`} onClick={() => onTileClick(x, y)} className="cursor-pointer">
+            <g key={`ground-${x}-${y}`} onClick={() => onTileClick(x, y)} className="cursor-pointer">
               {isWall ? (
                 <>
                   {(() => {
@@ -564,12 +560,132 @@ const GameMap: React.FC<GameMapProps> = ({
                 </>
               )}
 
-              {tile.coverBonus > 0 && !isWall && !character && (
+              {tile.coverBonus > 0 && !isWall && (
                 <text x={cx} y={cy + 6} textAnchor="middle" fontSize="12" fill="#fbbf24" opacity="0.7">
                   {tile.coverBonus}
                 </text>
               )}
+            </g>
+          );
+        })}
 
+        {/* SECOND PASS: Building walls (BEFORE characters so they don't overlap) */}
+        {(() => {
+          const characterInside = hasCharacterInsideBuilding(characters, map);
+          const wallOpacity = characterInside ? 0.2 : 0.9;
+          const wallHeight = WALL_HEIGHT * 0.7;
+          
+          // Building bounds: x=5-7, y=2-4, door at (6,4) in the bottom wall
+          // Draw walls as a closed rectangle with door opening
+          const buildingWalls: Array<{ x1: number; y1: number; x2: number; y2: number }> = [];
+          
+          // Get corner positions in isometric coords
+          const corners = {
+            topLeft: toIso(5, 2),
+            topRight: toIso(7, 2),
+            bottomRight: toIso(7, 4),
+            bottomLeft: toIso(5, 4),
+            doorPos: toIso(6, 4) // Door in the bottom wall
+          };
+          
+          // Calculate wall endpoints at tile edges
+          const wallPoints = {
+            // Top-left corner (top-left edge of tile 5,2)
+            tl: { x: corners.topLeft.sx + offsetX - TILE_W/2, y: corners.topLeft.sy + offsetY },
+            // Top-right corner (top-right edge of tile 7,2)
+            tr: { x: corners.topRight.sx + offsetX + TILE_W/2, y: corners.topRight.sy + offsetY },
+            // Bottom-right corner (bottom-right edge of tile 7,4)
+            br: { x: corners.bottomRight.sx + offsetX + TILE_W/2, y: corners.bottomRight.sy + offsetY },
+            // Bottom-left corner (bottom-left edge of tile 5,4)
+            bl: { x: corners.bottomLeft.sx + offsetX - TILE_W/2, y: corners.bottomLeft.sy + offsetY },
+            // Door opening (in the bottom wall at tile 6,4)
+            doorLeft: { x: corners.doorPos.sx + offsetX - TILE_W/4, y: corners.doorPos.sy + offsetY + TILE_H/2 },
+            doorRight: { x: corners.doorPos.sx + offsetX + TILE_W/4, y: corners.doorPos.sy + offsetY + TILE_H/2 }
+          };
+          
+          // Left wall: top-left to bottom-left
+          buildingWalls.push({
+            x1: wallPoints.tl.x,
+            y1: wallPoints.tl.y,
+            x2: wallPoints.bl.x,
+            y2: wallPoints.bl.y
+          });
+          
+          // Bottom wall LEFT part: bottom-left to door-left
+          buildingWalls.push({
+            x1: wallPoints.bl.x,
+            y1: wallPoints.bl.y,
+            x2: wallPoints.doorLeft.x,
+            y2: wallPoints.doorLeft.y
+          });
+          
+          // Bottom wall RIGHT part: door-right to bottom-right
+          buildingWalls.push({
+            x1: wallPoints.doorRight.x,
+            y1: wallPoints.doorRight.y,
+            x2: wallPoints.br.x,
+            y2: wallPoints.br.y
+          });
+          
+          // Right wall: bottom-right to top-right
+          buildingWalls.push({
+            x1: wallPoints.br.x,
+            y1: wallPoints.br.y,
+            x2: wallPoints.tr.x,
+            y2: wallPoints.tr.y
+          });
+          
+          // Top wall: top-right to top-left
+          buildingWalls.push({
+            x1: wallPoints.tr.x,
+            y1: wallPoints.tr.y,
+            x2: wallPoints.tl.x,
+            y2: wallPoints.tl.y
+          });
+          
+          return buildingWalls.map((seg, i) => (
+            <g key={`building-wall-${i}`} style={{ transition: 'opacity 0.3s ease' }}>
+              {/* Wall face */}
+              <polygon
+                points={`
+                  ${seg.x1},${seg.y1}
+                  ${seg.x2},${seg.y2}
+                  ${seg.x2},${seg.y2 - wallHeight}
+                  ${seg.x1},${seg.y1 - wallHeight}
+                `}
+                fill="#8b7b6f"
+                stroke="#5a4a3f"
+                strokeWidth="1.5"
+                opacity={wallOpacity}
+              />
+              {/* Wall top edge */}
+              <line
+                x1={seg.x1}
+                y1={seg.y1 - wallHeight}
+                x2={seg.x2}
+                y2={seg.y2 - wallHeight}
+                stroke="#a89888"
+                strokeWidth="2.5"
+                opacity={wallOpacity}
+              />
+            </g>
+          ));
+        })()}
+
+        {/* THIRD PASS: Characters, highlights, and overlays (ON TOP of walls) */}
+        {renderOrder.map(({ x, y }) => {
+          const tile = map[y][x];
+          const { sx, sy } = toIso(x, y);
+          const cx = sx + offsetX;
+          const cy = sy + offsetY;
+          const character = getCharacterAt(x, y);
+          const isMove = isValidMove(x, y);
+          const isAttack = isValidAttack(x, y);
+          const selected = isSelected(x, y);
+          const isWall = tile.type === 'wall' || tile.type === 'building';
+
+          return (
+            <g key={`overlay-${x}-${y}`} onClick={() => onTileClick(x, y)} className="cursor-pointer">
               {isMove && !character && !isWall && (
                 <path
                   d={diamondPath(cx, cy)}
@@ -595,7 +711,6 @@ const GameMap: React.FC<GameMapProps> = ({
               )}
 
               {character && (() => {
-                // Use visualPosition for smooth animation if available
                 const charPos = character.visualPosition || character.position;
                 const charIso = toIso(charPos.x, charPos.y);
                 const charCx = charIso.sx + offsetX;
@@ -610,97 +725,6 @@ const GameMap: React.FC<GameMapProps> = ({
             </g>
           );
         })}
-
-        {/* Building walls - drawn on top of floor tiles */}
-        {(() => {
-          const characterInside = hasCharacterInsideBuilding(characters, map);
-          const wallOpacity = characterInside ? 0.2 : 0.9;
-          const wallHeight = WALL_HEIGHT * 0.7; // Shorter walls for the building
-          
-          // Find all floor tiles and draw walls around them
-          const wallSegments: Array<{ x1: number; y1: number; x2: number; y2: number }> = [];
-          
-          for (let y = 0; y < MAP_ROWS; y++) {
-            for (let x = 0; x < MAP_COLS; x++) {
-              if (map[y][x].type === 'floor') {
-                const { sx, sy } = toIso(x, y);
-                const cx = sx + offsetX;
-                const cy = sy + offsetY;
-                
-                // Check each edge of the floor tile
-                // Top edge (y-1)
-                if (y === 0 || map[y-1][x].type !== 'floor') {
-                  wallSegments.push({
-                    x1: cx - TILE_W/2,
-                    y1: cy,
-                    x2: cx,
-                    y2: cy - TILE_H/2
-                  });
-                }
-                // Right edge (x+1)
-                if (x === MAP_COLS - 1 || map[y][x+1].type !== 'floor') {
-                  wallSegments.push({
-                    x1: cx,
-                    y1: cy - TILE_H/2,
-                    x2: cx + TILE_W/2,
-                    y2: cy
-                  });
-                }
-                // Bottom edge (y+1)
-                if (y === MAP_ROWS - 1 || map[y+1][x].type !== 'floor') {
-                  wallSegments.push({
-                    x1: cx + TILE_W/2,
-                    y1: cy,
-                    x2: cx,
-                    y2: cy + TILE_H/2
-                  });
-                }
-                // Left edge (x-1)
-                if (x === 0 || map[y][x-1].type !== 'floor') {
-                  wallSegments.push({
-                    x1: cx,
-                    y1: cy + TILE_H/2,
-                    x2: cx - TILE_W/2,
-                    y2: cy
-                  });
-                }
-              }
-            }
-          }
-          
-          return wallSegments.map((seg, i) => {
-            const midX = (seg.x1 + seg.x2) / 2;
-            const midY = (seg.y1 + seg.y2) / 2;
-            
-            return (
-              <g key={`wall-${i}`} style={{ transition: 'opacity 0.3s ease' }}>
-                {/* Wall face */}
-                <polygon
-                  points={`
-                    ${seg.x1},${seg.y1}
-                    ${seg.x2},${seg.y2}
-                    ${seg.x2},${seg.y2 - wallHeight}
-                    ${seg.x1},${seg.y1 - wallHeight}
-                  `}
-                  fill="#7a7a7a"
-                  stroke="#4a4a4a"
-                  strokeWidth="1"
-                  opacity={wallOpacity}
-                />
-                {/* Wall top */}
-                <line
-                  x1={seg.x1}
-                  y1={seg.y1 - wallHeight}
-                  x2={seg.x2}
-                  y2={seg.y2 - wallHeight}
-                  stroke="#9a9a9a"
-                  strokeWidth="2"
-                  opacity={wallOpacity}
-                />
-              </g>
-            );
-          });
-        })()}
 
         {projectiles.map(proj => (
           <ProjectileAnim key={proj.id} projectile={proj} offsetX={offsetX} offsetY={offsetY} />

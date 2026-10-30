@@ -178,12 +178,6 @@ const generateMap = (): Tile[][] => {
         walkable = true;
         coverBonus = 0;
       }
-      // Дверь здания (проём в стене)
-      else if (x === 6 && y === 5) {
-        type = 'floor';
-        walkable = true;
-        coverBonus = 0;
-      }
       // Малое здание справа
       else if (x >= 10 && x <= 11 && y >= 10 && y <= 11) {
         type = 'building';
