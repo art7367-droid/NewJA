@@ -35,7 +35,7 @@ export interface Character {
   portrait: string;
 }
 
-export type TileType = 'grass' | 'dirt' | 'road' | 'wall' | 'tree' | 'building' | 'water';
+export type TileType = 'grass' | 'dirt' | 'road' | 'wall' | 'tree' | 'building' | 'water' | 'floor';
 
 export interface Tile {
   x: number;
@@ -43,6 +43,15 @@ export interface Tile {
   type: TileType;
   walkable: boolean;
   coverBonus: number;
+  isInside?: boolean; // Mark if tile is inside a building
+}
+
+export interface WallSegment {
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+  isHorizontal: boolean;
 }
 
 export interface GameState {

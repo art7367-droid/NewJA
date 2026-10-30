@@ -172,19 +172,17 @@ const generateMap = (): Tile[][] => {
       else if (x === 7) {
         type = 'road';
       }
-      // Большое здание в центре-сверху
+      // Здание с полом внутри (можно заходить)
       else if (x >= 5 && x <= 7 && y >= 2 && y <= 4) {
-        type = 'building';
-        walkable = false;
+        type = 'floor';
+        walkable = true;
+        coverBonus = 0;
       }
-      // Стены здания
-      else if (
-        ((x === 4 || x === 8) && y >= 2 && y <= 4) ||
-        (x >= 5 && x <= 7 && (y === 1 || y === 5))
-      ) {
-        type = 'wall';
-        walkable = false;
-        coverBonus = 30;
+      // Дверь здания (проём в стене)
+      else if (x === 6 && y === 5) {
+        type = 'floor';
+        walkable = true;
+        coverBonus = 0;
       }
       // Малое здание справа
       else if (x >= 10 && x <= 11 && y >= 10 && y <= 11) {

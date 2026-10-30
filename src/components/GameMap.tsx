@@ -47,9 +47,21 @@ const getTileColors = (tile: Tile): { top: string; left: string; right: string }
     case 'wall': return { top: '#7a7a7a', left: '#5c5c5c', right: '#4a4a4a' };
     case 'tree': return { top: '#3d7a34', left: '#2d5a27', right: '#1f4a1a' };
     case 'building': return { top: '#8b7b6f', left: '#6b5b4f', right: '#5a4a3f' };
+    case 'floor': return { top: '#8b7355', left: '#6b5b4f', right: '#5a4a3f' };
     case 'water': return { top: '#3b82f6', left: '#2563eb', right: '#1d4ed8' };
     default: return { top: '#5a8f4a', left: '#4a7c3f', right: '#3d6b34' };
   }
+};
+
+// Check if a tile is inside the building
+const isInsideBuilding = (x: number, y: number, map: Tile[][]): boolean => {
+  if (y < 0 || y >= map.length || x < 0 || x >= map[0].length) return false;
+  return map[y][x].type === 'floor';
+};
+
+// Check if there's a character inside the building
+const hasCharacterInsideBuilding = (characters: Character[], map: Tile[][]): boolean => {
+  return characters.some(c => c.isAlive && isInsideBuilding(c.position.x, c.position.y, map));
 };
 
 // Enhanced character rendering with detailed SVG and realistic walking animation
@@ -479,10 +491,12 @@ const GameMap: React.FC<GameMapProps> = ({
           const cy = sy + offsetY;
           const colors = getTileColors(tile);
           const isWall = tile.type === 'wall' || tile.type === 'building';
+          const isFloor = tile.type === 'floor';
           const character = getCharacterAt(x, y);
           const isMove = isValidMove(x, y);
           const isAttack = isValidAttack(x, y);
           const selected = isSelected(x, y);
+          const characterInside = hasCharacterInsideBuilding(characters, map);
 
           return (
             <g key={`tile-${x}-${y}`} onClick={() => onTileClick(x, y)} className="cursor-pointer">
@@ -539,6 +553,14 @@ const GameMap: React.FC<GameMapProps> = ({
                       <circle cx={cx + 3} cy={cy + 1} r={0.5} fill="#00000020" />
                     </>
                   )}
+                  {isFloor && (
+                    <>
+                      {/* Floor pattern */}
+                      <path d={diamondPath(cx, cy)} fill="#6b5b4f" opacity="0.3" />
+                      <line x1={cx - 15} y1={cy} x2={cx + 15} y2={cy} stroke="#5a4a3f" strokeWidth="0.5" opacity="0.5" />
+                      <line x1={cx} y1={cy - 8} x2={cx} y2={cy + 8} stroke="#5a4a3f" strokeWidth="0.5" opacity="0.5" />
+                    </>
+                  )}
                 </>
               )}
 
@@ -588,6 +610,97 @@ const GameMap: React.FC<GameMapProps> = ({
             </g>
           );
         })}
+
+        {/* Building walls - drawn on top of floor tiles */}
+        {(() => {
+          const characterInside = hasCharacterInsideBuilding(characters, map);
+          const wallOpacity = characterInside ? 0.2 : 0.9;
+          const wallHeight = WALL_HEIGHT * 0.7; // Shorter walls for the building
+          
+          // Find all floor tiles and draw walls around them
+          const wallSegments: Array<{ x1: number; y1: number; x2: number; y2: number }> = [];
+          
+          for (let y = 0; y < MAP_ROWS; y++) {
+            for (let x = 0; x < MAP_COLS; x++) {
+              if (map[y][x].type === 'floor') {
+                const { sx, sy } = toIso(x, y);
+                const cx = sx + offsetX;
+                const cy = sy + offsetY;
+                
+                // Check each edge of the floor tile
+                // Top edge (y-1)
+                if (y === 0 || map[y-1][x].type !== 'floor') {
+                  wallSegments.push({
+                    x1: cx - TILE_W/2,
+                    y1: cy,
+                    x2: cx,
+                    y2: cy - TILE_H/2
+                  });
+                }
+                // Right edge (x+1)
+                if (x === MAP_COLS - 1 || map[y][x+1].type !== 'floor') {
+                  wallSegments.push({
+                    x1: cx,
+                    y1: cy - TILE_H/2,
+                    x2: cx + TILE_W/2,
+                    y2: cy
+                  });
+                }
+                // Bottom edge (y+1)
+                if (y === MAP_ROWS - 1 || map[y+1][x].type !== 'floor') {
+                  wallSegments.push({
+                    x1: cx + TILE_W/2,
+                    y1: cy,
+                    x2: cx,
+                    y2: cy + TILE_H/2
+                  });
+                }
+                // Left edge (x-1)
+                if (x === 0 || map[y][x-1].type !== 'floor') {
+                  wallSegments.push({
+                    x1: cx,
+                    y1: cy + TILE_H/2,
+                    x2: cx - TILE_W/2,
+                    y2: cy
+                  });
+                }
+              }
+            }
+          }
+          
+          return wallSegments.map((seg, i) => {
+            const midX = (seg.x1 + seg.x2) / 2;
+            const midY = (seg.y1 + seg.y2) / 2;
+            
+            return (
+              <g key={`wall-${i}`} style={{ transition: 'opacity 0.3s ease' }}>
+                {/* Wall face */}
+                <polygon
+                  points={`
+                    ${seg.x1},${seg.y1}
+                    ${seg.x2},${seg.y2}
+                    ${seg.x2},${seg.y2 - wallHeight}
+                    ${seg.x1},${seg.y1 - wallHeight}
+                  `}
+                  fill="#7a7a7a"
+                  stroke="#4a4a4a"
+                  strokeWidth="1"
+                  opacity={wallOpacity}
+                />
+                {/* Wall top */}
+                <line
+                  x1={seg.x1}
+                  y1={seg.y1 - wallHeight}
+                  x2={seg.x2}
+                  y2={seg.y2 - wallHeight}
+                  stroke="#9a9a9a"
+                  strokeWidth="2"
+                  opacity={wallOpacity}
+                />
+              </g>
+            );
+          });
+        })()}
 
         {projectiles.map(proj => (
           <ProjectileAnim key={proj.id} projectile={proj} offsetX={offsetX} offsetY={offsetY} />
